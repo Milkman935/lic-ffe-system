@@ -36,7 +36,7 @@ body.light #landing { background: #eaecf1; }
   animation: logoGlow 3s ease-in-out infinite;
 }
 body.light .lic-hero-logo {
-  filter: brightness(0.75) saturate(1.1) drop-shadow(0 0 8px rgba(0,200,175,0.5)) drop-shadow(0 0 22px rgba(0,180,160,0.25));
+  filter: brightness(0.5) saturate(1.3) drop-shadow(0 0 10px rgba(0,160,140,0.7)) drop-shadow(0 0 26px rgba(0,140,120,0.45));
 }
 @keyframes logoGlow {
   0%,100% { filter: brightness(1) drop-shadow(0 0 8px rgba(0,230,200,0.55)) drop-shadow(0 0 24px rgba(0,210,185,0.3)); }
@@ -154,8 +154,18 @@ body:not(.light) .champ-panel:hover::after {
 .panel-logo-wrap .champ-logo-img {
   max-width: 160px; width: 85%; height: 100%;
   object-fit: contain; object-position: center;
-  filter: drop-shadow(0 2px 10px rgba(0,0,0,0.3));
-  transition: transform 0.4s;
+  filter: drop-shadow(0 0 6px var(--logo-glow)) drop-shadow(0 0 18px var(--logo-glow-wide));
+  transition: transform 0.4s, filter 0.4s;
+}
+.champ-panel.f1    { --logo-glow: rgba(225,6,0,0.5);    --logo-glow-wide: rgba(225,6,0,0.2); }
+.champ-panel.wec   { --logo-glow: rgba(0,103,255,0.5);  --logo-glow-wide: rgba(0,103,255,0.2); }
+.champ-panel.motogp { --logo-glow: rgba(255,105,0,0.5); --logo-glow-wide: rgba(255,105,0,0.2); }
+.champ-panel:hover .panel-logo-wrap .champ-logo-img {
+  filter: drop-shadow(0 0 10px var(--logo-glow)) drop-shadow(0 0 28px var(--logo-glow-wide));
+}
+/* MotoGP logo slightly larger to visually match F1 & WEC */
+.champ-panel.motogp .panel-logo-wrap .champ-logo-img {
+  max-width: 200px; width: 100%;
 }
 .champ-panel:hover .panel-logo-wrap .champ-logo-img { transform: scale(1.1); }
 
