@@ -30,8 +30,8 @@ body.light #landing { background: #eaecf1; }
   z-index: 1; flex-shrink: 0;
 }
 .lic-hero-logo {
-  height: 36px; width: auto; display: block;
-  margin: 0 auto 20px;
+  height: 56px; width: auto; display: block;
+  margin: 0 auto 24px;
   filter: brightness(0.85);
 }
 body.light .lic-hero-logo {
@@ -56,7 +56,8 @@ body.light .lic-hero-logo {
 }
 .landing-title {
   font-size: clamp(28px, 4.5vw, 52px); font-weight: 900;
-  letter-spacing: -2px; line-height: 1;
+  letter-spacing: -2px; line-height: 1.15;
+  padding-bottom: 4px;
   color: var(--text); margin-bottom: 10px;
 }
 .landing-title span {
