@@ -60,20 +60,50 @@ function categorize(n) {
   return 'OTHERS';
 }
 
-// Delivery tracking per item per location
-function dKey(dept, loc, itemId) {
-  return `${S.champ}_${S.year}_${dept}_${loc}_${itemId}_del`;
+// ── COMPUTED ITEM FIELDS (single source of truth) ──
+function itemTotal(item) {
+  let t = 0;
+  Object.values(item.dept_quantities||{}).forEach(dq => Object.values(dq).forEach(q => t += (parseInt(q, 10)||0)));
+  Object.values(item.team_quantities||{}).forEach(tq => Object.values(tq).forEach(q => t += (parseInt(q, 10)||0)));
+  return t;
+}
+function itemAvail(item) {
+  return (item.lic_inventory||0) + (item.moys_lic||0) + (item.aspire||0);
+}
+function itemDeficit(item) {
+  return Math.max(0, itemTotal(item) - itemAvail(item));
+}
+
+// ── NUMERIC PARSING ──
+function parseQty(val, max) {
+  const n = parseInt(val, 10);
+  if (isNaN(n) || n < 0) return 0;
+  return max !== undefined ? Math.min(n, max) : n;
+}
+
+// Delivery tracking — stored inside save blob under S.data.deliveries
+function dBlobKey(dept, loc, itemId) {
+  return `${dept}||${loc}||${itemId}`;
 }
 function getDelivered(dept, loc, itemId) {
-  return parseInt(localStorage.getItem(dKey(dept, loc, itemId))||'0');
+  if (!S.data) return 0;
+  if (!S.data.deliveries) S.data.deliveries = {};
+  return S.data.deliveries[dBlobKey(dept, loc, itemId)] || 0;
 }
 function setDelivered(dept, loc, itemId, qty) {
-  localStorage.setItem(dKey(dept, loc, itemId), String(qty));
+  if (!S.data) return;
+  if (!S.data.deliveries) S.data.deliveries = {};
+  if (qty === 0) {
+    delete S.data.deliveries[dBlobKey(dept, loc, itemId)];
+  } else {
+    S.data.deliveries[dBlobKey(dept, loc, itemId)] = qty;
+  }
+  debouncedSave();
 }
 function getLocCounts(dept, loc) {
   let total = 0, del = 0;
   items().forEach(item => {
-    const q = parseInt(item.dept_quantities?.[dept]?.[loc]||0);
+    const q = parseInt(item.dept_quantities?.[dept]?.[loc]||0, 10);
     if (q > 0) { total += q; del += Math.min(getDelivered(dept, loc, item.id), q); }
   });
   return { total, del };
@@ -82,6 +112,27 @@ function getDeptCounts(dept, locs) {
   let total = 0, del = 0;
   (locs||[]).forEach(loc => { const c = getLocCounts(dept, loc); total += c.total; del += c.del; });
   return { total, del };
+}
+
+// ── HTML TEMPLATE HELPERS ──
+function statusCell(pct) {
+  const sc = pct===100?'var(--success)':pct>0?'var(--warning)':'var(--text-muted)';
+  return `<div class="status-pct" style="color:${sc};font-size:12px;font-weight:600">${pct}%</div><div class="progress-mini"><div class="progress-mini-fill" style="width:${pct}%;background:${sc}"></div></div>`;
+}
+function emptyState(iconName, msg, sub) {
+  return `<div class="empty-state"><div class="empty-state-icon">${icon(iconName, 32)}</div><div class="empty-state-msg">${esc(msg)}</div>${sub?`<div class="empty-state-sub">${esc(sub)}</div>`:''}</div>`;
+}
+
+// ── DOM MICRO-HELPER ──
+function h(tag, attrs, ...children) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === 'cls') el.className = v;
+    else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v);
+  }
+  children.flat().forEach(c => el.appendChild(typeof c === 'string' ? document.createTextNode(c) : c));
+  return el;
 }
 
 // ── MASTER VIEW ──

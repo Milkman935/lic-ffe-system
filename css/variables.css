@@ -4,6 +4,7 @@
   --success:#00c853; --warning:#ffab00; --danger:#ff1744; --info:#2196f3;
   --radius:12px; --shadow:0 4px 24px rgba(0,0,0,0.4); --champ-color:#e10600;
   --input-bg:#1c1c28;
+  --f1-color:#e10600; --wec-color:#0067ff; --motogp-color:#ff6900;
 }
 body.light {
   --bg:#f0f2f5; --surface:#ffffff; --surface2:#f5f7fa; --surface3:#eaecef;

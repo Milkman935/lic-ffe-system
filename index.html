@@ -27,37 +27,51 @@
 <!-- LANDING -->
 <div id="landing">
   <div class="landing-bg"></div>
+  <div class="landing-stripe"></div>
   <div class="landing-header">
     <div class="lic-badge">Lusail International Circuit</div>
-    <div class="landing-title">FFE <span>Management</span> System</div>
-    <div class="landing-subtitle">Furniture, Fixtures &amp; Equipment — Event Coordination Platform</div>
+    <div class="landing-title">FFE <span>Management</span></div>
+    <div class="landing-subtitle">Furniture · Fixtures · Equipment — Event Coordination</div>
   </div>
-  <div class="champ-grid">
-    <div class="champ-card wec" onclick="selectChamp('wec')">
-      <div class="champ-logo">
-        <img src="assets/images/WEC.png" alt="WEC" class="champ-logo-img">
+  <div class="champ-panels">
+    <div class="champ-panel wec" onclick="selectChamp('wec')">
+      <div class="panel-bg-num">01</div>
+      <div class="panel-inner">
+        <div class="panel-logo-wrap">
+          <img src="assets/images/WEC.png" alt="WEC" class="champ-logo-img">
+        </div>
+        <div class="panel-info">
+          <div class="panel-name">WEC</div>
+          <div class="panel-series">FIA World Endurance Championship</div>
+        </div>
+        <div class="panel-cta">Select Year <span class="panel-arrow">→</span></div>
       </div>
-      <div class="champ-name">WEC</div>
-      <div class="champ-series">FIA World Endurance Championship</div>
-      <button class="champ-enter-btn">Select Year
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-      </button>
     </div>
-    <div class="champ-card f1" onclick="selectChamp('f1')">
-      <div class="champ-logo">
-        <img src="assets/images/f1.png" alt="Formula 1" class="champ-logo-img">
+    <div class="champ-panel f1" onclick="selectChamp('f1')">
+      <div class="panel-bg-num">02</div>
+      <div class="panel-inner">
+        <div class="panel-logo-wrap">
+          <img src="assets/images/f1.png" alt="Formula 1" class="champ-logo-img">
+        </div>
+        <div class="panel-info">
+          <div class="panel-name">Formula 1</div>
+          <div class="panel-series">FIA Formula One World Championship</div>
+        </div>
+        <div class="panel-cta">Select Year <span class="panel-arrow">→</span></div>
       </div>
-      <div class="champ-name">Formula 1</div>
-      <div class="champ-series">FIA Formula One World Championship</div>
-      <button class="champ-enter-btn">Select Year →</button>
     </div>
-    <div class="champ-card motogp" onclick="selectChamp('motogp')">
-      <div class="champ-logo">
-        <img src="assets/images/MOTO gp .png" alt="Moto GP" class="champ-logo-img" id="motogp-logo">
+    <div class="champ-panel motogp" onclick="selectChamp('motogp')">
+      <div class="panel-bg-num">03</div>
+      <div class="panel-inner">
+        <div class="panel-logo-wrap">
+          <img src="assets/images/MOTO gp .png" alt="MotoGP" class="champ-logo-img" id="motogp-logo">
+        </div>
+        <div class="panel-info">
+          <div class="panel-name">MotoGP</div>
+          <div class="panel-series">FIM Grand Prix World Championship</div>
+        </div>
+        <div class="panel-cta">Select Year <span class="panel-arrow">→</span></div>
       </div>
-      <div class="champ-name">Moto GP</div>
-      <div class="champ-series">FIM Grand Prix World Championship</div>
-      <button class="champ-enter-btn">Select Year →</button>
     </div>
   </div>
 </div>

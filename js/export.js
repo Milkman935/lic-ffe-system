@@ -3,10 +3,10 @@ function exportData() {
   depts().forEach(([dn, dd]) => {
     Object.entries(dd.locations||{}).forEach(([ln, li]) => {
       items().forEach(item => {
-        const qty = parseInt(item.dept_quantities?.[dn]?.[ln]||0);
+        const qty = parseInt(item.dept_quantities?.[dn]?.[ln]||0, 10);
         if (!qty) return;
         const del = getDelivered(dn, ln, item.id);
-        rows.push([item.name, item.category||categorize(item.name), item.description||'', dn, ln, qty, del, li.bump_in||'', li.bump_out||'', item.total_needed||0, item.lic_inventory||0, item.deficit||0, item.notes||'']);
+        rows.push([item.name, item.category||categorize(item.name), item.description||'', dn, ln, qty, del, li.bump_in||'', li.bump_out||'', itemTotal(item), item.lic_inventory||0, itemDeficit(item), item.notes||'']);
       });
     });
   });
@@ -24,13 +24,8 @@ let toastT;
 
 function showProcurementModal() {
   const procItems = items()
-    .map(item => {
-      const avail = (item.lic_inventory||0) + (item.moys_lic||0) + (item.aspire||0);
-      const deficit = Math.max(0, (item.total_needed||0) - avail);
-      return { ...item, _deficit: deficit, _avail: avail };
-    })
-    .filter(i => i._deficit > 0)
-    .sort((a,b) => b._deficit - a._deficit);
+    .filter(i => itemDeficit(i) > 0)
+    .sort((a,b) => itemDeficit(b) - itemDeficit(a));
 
   if (!procItems.length) {
     showToast('No items need procurement', 'success');
@@ -40,13 +35,13 @@ function showProcurementModal() {
   const rows = procItems.map(item => `
     <tr class="proc-row">
       <td>${esc(item.name)}</td>
-      <td style="text-align:center">${item.total_needed||0}</td>
-      <td style="text-align:center">${item._avail}</td>
-      <td style="text-align:center;color:var(--danger);font-weight:600">−${item._deficit}</td>
+      <td style="text-align:center">${itemTotal(item)}</td>
+      <td style="text-align:center">${itemAvail(item)}</td>
+      <td style="text-align:center;color:var(--danger);font-weight:600">−${itemDeficit(item)}</td>
       <td style="color:var(--text-muted);font-size:12px">${esc(item.notes||'—')}</td>
     </tr>`).join('');
 
-  const totalDeficit = procItems.reduce((s,i) => s + i._deficit, 0);
+  const totalDeficit = procItems.reduce((s,i) => s + itemDeficit(i), 0);
 
   setModal(`
     <div class="modal-title">
@@ -78,17 +73,12 @@ function showProcurementModal() {
 
 function exportProcurementList() {
   const procItems = items()
-    .map(item => {
-      const avail = (item.lic_inventory||0) + (item.moys_lic||0) + (item.aspire||0);
-      const deficit = Math.max(0, (item.total_needed||0) - avail);
-      return { ...item, _deficit: deficit, _avail: avail };
-    })
-    .filter(i => i._deficit > 0)
-    .sort((a,b) => b._deficit - a._deficit);
+    .filter(i => itemDeficit(i) > 0)
+    .sort((a,b) => itemDeficit(b) - itemDeficit(a));
 
   const rows = [['Item','Category','Total Needed','LIC Stock','MOYS LIC','Aspire','Available','Deficit','Notes']];
   procItems.forEach(item => {
-    rows.push([item.name, item.category||'', item.total_needed||0, item.lic_inventory||0, item.moys_lic||0, item.aspire||0, item._avail, item._deficit, item.notes||'']);
+    rows.push([item.name, item.category||'', itemTotal(item), item.lic_inventory||0, item.moys_lic||0, item.aspire||0, itemAvail(item), itemDeficit(item), item.notes||'']);
   });
   const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob = new Blob([csv], {type:'text/csv'});
@@ -106,12 +96,10 @@ function exportDept(deptName) {
   const rows = [['Item','Category','Location','Qty Requested','Delivered','Bump In','Bump Out','LIC Stock','MOYS LIC','Aspire','Total Needed','Deficit','Notes']];
   Object.entries(dept.locations||{}).forEach(([locName, locInfo]) => {
     items().forEach(item => {
-      const qty = parseInt(item.dept_quantities?.[deptName]?.[locName]||0);
+      const qty = parseInt(item.dept_quantities?.[deptName]?.[locName]||0, 10);
       if (!qty) return;
       const del = getDelivered(deptName, locName, item.id);
-      const avail = (item.lic_inventory||0) + (item.moys_lic||0) + (item.aspire||0);
-      const deficit = Math.max(0, (item.total_needed||0) - avail);
-      rows.push([item.name, item.category||categorize(item.name), locName, qty, del, locInfo.bump_in||'', locInfo.bump_out||'', item.lic_inventory||0, item.moys_lic||0, item.aspire||0, item.total_needed||0, deficit, item.notes||'']);
+      rows.push([item.name, item.category||categorize(item.name), locName, qty, del, locInfo.bump_in||'', locInfo.bump_out||'', item.lic_inventory||0, item.moys_lic||0, item.aspire||0, itemTotal(item), itemDeficit(item), item.notes||'']);
     });
   });
   if (rows.length === 1) { showToast('No items in this department', 'error'); return; }

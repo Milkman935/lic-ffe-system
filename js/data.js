@@ -37,14 +37,15 @@ function save() {
 // Debounced save — call after every data mutation to guarantee persistence
 let _saveTimer = null;
 function debouncedSave() {
+  S._dirty = true;
   if (_saveTimer) clearTimeout(_saveTimer);
   _saveTimer = setTimeout(() => { save(); _saveTimer = null; }, 400);
 }
 
-// Save on visibility change, tab close, and every 5 s
+// Save on visibility change, tab close, and every 5 s (only when dirty)
 document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
 window.addEventListener('beforeunload', () => { if (_saveTimer) clearTimeout(_saveTimer); save(); });
-setInterval(() => { if (S.champ && S.data) save(); }, 5000);
+setInterval(() => { if (S.champ && S.data && S._dirty) save(); }, 5000);
 function loadData(champ, year) {
   const key = storageKey(champ, year);
   try {
@@ -52,11 +53,16 @@ function loadData(champ, year) {
     if (raw) {
       const parsed = JSON.parse(raw);
       // Basic sanity check — must have items and departments
-      if (parsed && parsed.items && parsed.departments) return parsed;
+      if (parsed && parsed.items && parsed.departments) {
+        // Ensure deliveries blob exists (migration from old _del localStorage keys)
+        if (!parsed.deliveries) parsed.deliveries = {};
+        return parsed;
+      }
     }
   } catch(e) {}
   // No valid saved data — clone from INITIAL_DATA and immediately persist it
   const fresh = JSON.parse(JSON.stringify(INITIAL_DATA.championships[champ] || INITIAL_DATA.championships.f1));
+  fresh.deliveries = {};
   try { localStorage.setItem(key, JSON.stringify(fresh)); } catch(e) {}
   return fresh;
 }

@@ -74,18 +74,33 @@ function addNewItem() {
   const name = document.getElementById('mi-name')?.value?.trim();
   if (!name) return showToast('Name required','error');
   const item = {
-    id: 'item_'+Date.now(), name,
+    id: `item_${Date.now()}_${Math.random().toString(36).slice(2,7)}`, name,
     category: document.getElementById('mi-cat')?.value||'Other',
     description: document.getElementById('mi-desc')?.value||'',
-    lic_inventory: parseInt(document.getElementById('mi-inv')?.value||'0'),
+    lic_inventory: parseInt(document.getElementById('mi-inv')?.value||'0', 10),
     moys_lic:0, aspire:0, total_needed:0, deficit:0,
     notes: document.getElementById('mi-notes')?.value||'',
-    dept_quantities:{}
+    dept_quantities:{}, team_quantities:{}
   };
   cd().items.push(item);
+  const addedIdx = cd().items.length - 1;
   save();
   closeModal();
-  showToast(`"${name}" added`,'success');
+  renderTab('master');
+  // Stash for undo
+  _deletedItem = { item: JSON.parse(JSON.stringify(item)), idx: addedIdx, champ: S.champ, year: S.year, _undoAdd: true };
+  showUndoToast(`"${name}" added`);
+  // Offer sync to other championships
+  showSyncPanel(
+    'Add to other championships?',
+    `"<strong>${esc(name)}</strong>" was added to <strong>${CHAMP_NAMES[S.champ]}</strong>`,
+    (data) => {
+      if (!data.items) data.items = [];
+      if (!data.items.find(i => i.id === item.id)) {
+        data.items.push(Object.assign({}, item, { dept_quantities:{}, team_quantities:{} }));
+      }
+    }
+  );
 }
 
 function setModal(html) {

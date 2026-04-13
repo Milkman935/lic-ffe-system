@@ -56,10 +56,14 @@ function applySyncPanel() {
   panel.querySelectorAll('input[type="checkbox"]').forEach((chk, i) => {
     if (chk.checked && others[i]) {
       const { champ, year, data } = others[i];
-      _syncApplyFn(data);
-      recalcAllDeficitsForData(data);
-      saveChampData(champ, year, data);
-      applied++;
+      try {
+        _syncApplyFn(data);
+        recalcAllDeficitsForData(data);
+        saveChampData(champ, year, data);
+        applied++;
+      } catch(e) {
+        showToast(`Sync failed for ${CHAMP_NAMES[champ]} — data unchanged`, 'error');
+      }
     }
   });
   panel.remove();
@@ -68,8 +72,8 @@ function applySyncPanel() {
 
 function recalcAllDeficitsForData(data) {
   (data.items || []).forEach(item => {
-    const avail = (item.lic_inventory||0)+(item.moys_lic||0)+(item.aspire||0);
-    item.deficit = Math.max(0, (item.total_needed||0)-avail);
+    item.total_needed = itemTotal(item);
+    item.deficit = itemDeficit(item);
   });
 }
 

@@ -30,14 +30,27 @@ function undoDelete() {
   clearTimeout(_undoTimer);
   cancelAnimationFrame(_undoRafId);
   document.getElementById('undo-toast').classList.remove('show');
-  // Only restore if still on same champ+year
+  // Only act if still on same champ+year
   if (S.champ === _deletedItem.champ && S.year === _deletedItem.year) {
     const arr = cd().items;
-    const insertAt = Math.min(_deletedItem.idx, arr.length);
-    arr.splice(insertAt, 0, _deletedItem.item);
-    save();
-    renderTab('master');
-    showToast(`"${_deletedItem.item.name}" restored`, 'success');
+    if (_deletedItem._undoAdd) {
+      // Undo an add: remove the item that was just added
+      const i = arr.findIndex(it => it.id === _deletedItem.item.id);
+      if (i !== -1) arr.splice(i, 1);
+      if (S.data.deliveries) {
+        Object.keys(S.data.deliveries).forEach(k => { if (k.endsWith(`||${_deletedItem.item.id}`)) delete S.data.deliveries[k]; });
+      }
+      save();
+      renderTab('master');
+      showToast(`"${_deletedItem.item.name}" removed`, 'success');
+    } else {
+      // Undo a delete: restore the item
+      const insertAt = Math.min(_deletedItem.idx, arr.length);
+      arr.splice(insertAt, 0, _deletedItem.item);
+      save();
+      renderTab('master');
+      showToast(`"${_deletedItem.item.name}" restored`, 'success');
+    }
   } else {
     showToast('Cannot undo — championship has changed', 'error');
   }

@@ -16,8 +16,8 @@ function renderYearGrid(champ) {
 }
 function addYear() {
   const y = prompt('Enter year (e.g. 2028):');
-  if (!y || isNaN(parseInt(y))) return;
-  const yr = parseInt(y);
+  if (!y || isNaN(parseInt(y, 10))) return;
+  const yr = parseInt(y, 10);
   if (!S.years[pendingChamp]) S.years[pendingChamp] = [];
   if (!S.years[pendingChamp].includes(yr)) {
     S.years[pendingChamp].push(yr);

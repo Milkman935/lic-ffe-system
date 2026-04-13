@@ -1,3 +1,7 @@
+function destroyChart(key) {
+  if (S.charts[key]) { try { S.charts[key].destroy(); } catch(e){} S.charts[key] = null; }
+}
+
 function toggleChartDetail(btn) {
   const card = btn.closest('.chart-card');
   const detail = card.querySelector('.chart-detail');
@@ -10,14 +14,14 @@ function toggleChartDetail(btn) {
 function renderAnalytics(container) {
   const its = items();
   const ds = depts();
-  const totalNeeded = its.reduce((s,i)=>s+(i.total_needed||0),0);
+  const totalNeeded = its.reduce((s,i)=>s+itemTotal(i),0);
   const totalLIC    = its.reduce((s,i)=>s+(i.lic_inventory||0),0);
   const totalMOYS   = its.reduce((s,i)=>s+(i.moys_lic||0),0);
   const totalAspire = its.reduce((s,i)=>s+(i.aspire||0),0);
   const totalInv    = totalLIC + totalMOYS + totalAspire;
-  const totalDef    = its.reduce((s,i)=>s+(i.deficit||0),0);
-  const defItems    = its.filter(i=>(i.deficit||0)>0).length;
-  const covPct      = totalNeeded > 0 ? Math.round(Math.min(totalInv/totalNeeded*100,100)) : 0;
+  const totalDef    = its.reduce((s,i)=>s+itemDeficit(i),0);
+  const defItems    = its.filter(i=>itemDeficit(i)>0).length;
+  const covPct      = totalNeeded > 0 ? Math.floor(Math.min(totalInv/totalNeeded*100,100)) : 0;
   const color       = CHAMP_COLORS[S.champ]||'#e10600';
   const isDark      = !document.body.classList.contains('light');
   const tickColor   = isDark ? '#7070a0' : '#6b7280';
@@ -27,40 +31,41 @@ function renderAnalytics(container) {
   const deptDelivery = ds.map(([dn,dd]) => {
     const locs = Object.keys(dd.locations||{});
     const {total,del} = getDeptCounts(dn,locs);
-    return {name:dn, total, del, pending:total-del, pct:total>0?Math.round(del/total*100):0};
+    return {name:dn, total, del, pending:total-del, pct:total>0?Math.floor(del/total*100):0};
   }).sort((a,b)=>b.pct-a.pct);
 
   // Procurement priority (top items by deficit)
-  const procItems = [...its].filter(i=>(i.deficit||0)>0).sort((a,b)=>(b.deficit||0)-(a.deficit||0)).slice(0,12);
-  const procMax   = procItems[0]?.deficit||1;
+  const procItems = [...its].filter(i=>itemDeficit(i)>0).sort((a,b)=>itemDeficit(b)-itemDeficit(a)).slice(0,12);
+  const procMax   = procItems.length ? itemDeficit(procItems[0]) : 1;
 
   // Dept coverage (inventory vs demand per dept)
   const deptCoverage = ds.map(([dn])=>{
     let need=0, stock=0;
     its.forEach(item=>{
       const dq=item.dept_quantities?.[dn]; if(!dq) return;
-      Object.values(dq).forEach(q=>{ const qq=parseInt(q)||0; if(qq>0){need+=qq; const avail=(item.lic_inventory||0)+(item.moys_lic||0)+(item.aspire||0); stock+=Math.min(qq,avail);} });
+      Object.values(dq).forEach(q=>{ const qq=parseInt(q, 10)||0; if(qq>0){need+=qq; stock+=Math.min(qq,itemAvail(item));} });
     });
-    return {name:dn, need, stock, pct:need>0?Math.round(stock/need*100):100};
+    return {name:dn, need, stock, pct:need>0?Math.floor(stock/need*100):100};
   }).sort((a,b)=>a.pct-b.pct);
 
   const deptTotals = ds.map(([n])=>({name:n,total:getDeptTotal(n)})).sort((a,b)=>b.total-a.total);
-  const topItems   = [...its].sort((a,b)=>(b.total_needed||0)-(a.total_needed||0)).slice(0,8);
-  const topMax     = topItems[0]?.total_needed||1;
+  const topItems   = [...its].sort((a,b)=>itemTotal(b)-itemTotal(a)).slice(0,8);
+  const topMax     = topItems.length ? itemTotal(topItems[0]) : 1;
   const palette    = ['#e10600','#0067ff','#ff6900','#00c853','#aa00ff','#ffab00','#00bcd4','#ff4081'];
 
   const topListHtml = topItems.map((item,i)=>`
     <li>
       <span class="top-list-rank">${i+1}</span>
       <span style="flex:1;font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px" title="${esc(item.name)}">${esc(item.name.length>20?item.name.slice(0,20)+'…':item.name)}</span>
-      <div class="top-list-bar-wrap"><div class="top-list-bar" style="width:${Math.round((item.total_needed||0)/topMax*100)}%;background:${palette[i%palette.length]}"></div></div>
-      <span class="top-list-val">${item.total_needed||0}</span>
+      <div class="top-list-bar-wrap"><div class="top-list-bar" style="width:${Math.round(itemTotal(item)/topMax*100)}%;background:${palette[i%palette.length]}"></div></div>
+      <span class="top-list-val">${itemTotal(item)}</span>
     </li>`).join('');
 
   // Detail tables for expandable sections
   const procDetailHtml = procItems.map(item=>{
-    const avail=(item.lic_inventory||0)+(item.moys_lic||0)+(item.aspire||0);
-    return `<tr class="proc-row"><td>${esc(item.name)}</td><td style="text-align:right">${item.total_needed||0}</td><td style="text-align:right">${avail}</td><td style="text-align:right;color:var(--danger);font-weight:700">−${item.deficit}</td></tr>`;
+    const avail=itemAvail(item);
+    const def=itemDeficit(item);
+    return `<tr class="proc-row"><td>${esc(item.name)}</td><td style="text-align:right">${itemTotal(item)}</td><td style="text-align:right">${avail}</td><td style="text-align:right;color:var(--danger);font-weight:700">−${def}</td></tr>`;
   }).join('');
 
   const covDetailHtml = deptCoverage.map(d=>{
@@ -105,7 +110,7 @@ function renderAnalytics(container) {
         </div>
         <div class="chart-detail" style="display:none">
           <table style="${detailTableStyle}"><thead><tr><th style="${detailThStyle}">Source</th><th style="${detailThStyle};text-align:right">Qty</th><th style="${detailThStyle};text-align:right">% of Demand</th></tr></thead><tbody>
-            ${[['LIC Inventory',totalLIC,'#00c853'],['MOYS/LIC',totalMOYS,'#0067ff'],['Aspire',totalAspire,'#ff6900']].map(([l,v,c])=>`<tr class="proc-row"><td>${l}</td><td style="text-align:right;font-weight:700">${v.toLocaleString()}</td><td style="text-align:right;color:${c}">${totalNeeded>0?Math.round(v/totalNeeded*100):0}%</td></tr>`).join('')}
+            ${[['LIC Inventory',totalLIC,'#00c853'],['MOYS/LIC',totalMOYS,'#0067ff'],['Aspire',totalAspire,'#ff6900']].map(([l,v,c])=>`<tr class="proc-row"><td>${l}</td><td style="text-align:right;font-weight:700">${v.toLocaleString()}</td><td style="text-align:right;color:${c}">${totalNeeded>0?Math.floor(isFinite(v/totalNeeded)?v/totalNeeded*100:0):0}%</td></tr>`).join('')}
           </tbody></table>
         </div>
       </div>
@@ -187,6 +192,7 @@ function renderAnalytics(container) {
     </div>`;
 
   // ─ Gauge ─
+  destroyChart('gauge');
   S.charts.gauge = new Chart(document.getElementById('ch-gauge'),{
     type:'doughnut',
     data:{labels:['Covered','Uncovered'],datasets:[{data:[Math.min(totalInv,totalNeeded),Math.max(0,totalNeeded-totalInv)],backgroundColor:[covPct>=80?'#00c853':covPct>=50?'#ffab00':'#ff1744','rgba(128,128,128,0.15)'],borderWidth:0,cutout:'72%'}]},
@@ -194,6 +200,7 @@ function renderAnalytics(container) {
   });
 
   // ─ Procurement Priority (top deficit items) ─
+  destroyChart('proc');
   S.charts.proc = new Chart(document.getElementById('ch-proc'),{
     type:'bar',
     data:{labels:procItems.map(i=>i.name.length>18?i.name.slice(0,18)+'…':i.name),datasets:[{label:'Deficit',data:procItems.map(i=>i.deficit||0),backgroundColor:'#ff174477',borderColor:'#ff1744',borderWidth:2,borderRadius:4}]},
@@ -201,6 +208,7 @@ function renderAnalytics(container) {
   });
 
   // ─ Dept delivery stacked bar ─
+  destroyChart('delivery');
   S.charts.delivery = new Chart(document.getElementById('ch-delivery'),{
     type:'bar',
     data:{labels:deptDelivery.map(d=>d.name.length>18?d.name.slice(0,18)+'…':d.name),datasets:[
@@ -211,6 +219,7 @@ function renderAnalytics(container) {
   });
 
   // ─ Dept demand ─
+  destroyChart('dept');
   S.charts.dept = new Chart(document.getElementById('ch-dept'),{
     type:'bar',
     data:{labels:deptTotals.slice(0,12).map(d=>d.name.length>16?d.name.slice(0,16)+'…':d.name),datasets:[{label:'Items',data:deptTotals.slice(0,12).map(d=>d.total),backgroundColor:color+'77',borderColor:color,borderWidth:2,borderRadius:4}]},
@@ -218,6 +227,7 @@ function renderAnalytics(container) {
   });
 
   // ─ Dept stock coverage ─
+  destroyChart('deptcov');
   S.charts.deptcov = new Chart(document.getElementById('ch-deptcov'),{
     type:'bar',
     data:{labels:deptCoverage.map(d=>d.name.length>16?d.name.slice(0,16)+'…':d.name),datasets:[{label:'Coverage %',data:deptCoverage.map(d=>d.pct),backgroundColor:deptCoverage.map(d=>d.pct>=80?'#00c85377':d.pct>=50?'#ffab0077':'#ff174477'),borderColor:deptCoverage.map(d=>d.pct>=80?'#00c853':d.pct>=50?'#ffab00':'#ff1744'),borderWidth:2,borderRadius:4}]},
@@ -225,6 +235,7 @@ function renderAnalytics(container) {
   });
 
   // ─ Inventory sources vs demand ─
+  destroyChart('inv');
   S.charts.inv = new Chart(document.getElementById('ch-inv'),{
     type:'bar',
     data:{labels:['Total Needed','LIC Inventory','MOYS/LIC','Aspire'],datasets:[{label:'Qty',data:[totalNeeded,totalLIC,totalMOYS,totalAspire],backgroundColor:['#e1060077','#00c85377','#0067ff77','#ff690077'],borderColor:['#e10600','#00c853','#0067ff','#ff6900'],borderWidth:2,borderRadius:6}]},
@@ -233,7 +244,11 @@ function renderAnalytics(container) {
 
   // ── Team Analytics ──
   const teamList = teams();
-  if (teamList.length > 0) {
+  if (teamList.length === 0) {
+    const noTeamSec = document.createElement('div');
+    noTeamSec.innerHTML = `<div style="margin:28px 0 14px;font-size:17px;font-weight:800;color:var(--text);padding-bottom:8px;border-bottom:1px solid var(--border)">Teams Analytics</div>` + emptyState('flag','No teams added yet','Click "+ Team" in the top bar to add a team');
+    container.appendChild(noTeamSec);
+  } else if (teamList.length > 0) {
     const isDarkT = !document.body.classList.contains('light');
     const tickColorT = isDarkT ? '#7070a0' : '#6b7280';
     const gridColorT = isDarkT ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
@@ -248,7 +263,7 @@ function renderAnalytics(container) {
       const catBreakdown = {};
       items().forEach(item => {
         Object.values(item.team_quantities?.[tn] || {}).forEach(q => {
-          const qty = parseInt(q) || 0;
+          const qty = parseInt(q, 10) || 0;
           if (qty > 0) {
             itemCount += qty;
             const cat = item.category || 'OTHERS';
@@ -348,6 +363,7 @@ function renderAnalytics(container) {
     container.appendChild(teamSec);
 
     // ── Render Chart 1: delivery stacked bar ──
+    destroyChart('teamDel');
     S.charts['teamDel'] = new Chart(document.getElementById('ch-team-del'), {
       type: 'bar',
       data: {
@@ -361,6 +377,7 @@ function renderAnalytics(container) {
     });
 
     // ── Render Chart 2: total items horizontal bar ──
+    destroyChart('teamTot');
     S.charts['teamTot'] = new Chart(document.getElementById('ch-team-tot'), {
       type: 'bar',
       data: {
@@ -371,6 +388,7 @@ function renderAnalytics(container) {
     });
 
     // ── Render Chart 3: readiness doughnut ──
+    destroyChart('teamReady');
     S.charts['teamReady'] = new Chart(document.getElementById('ch-team-ready'), {
       type: 'doughnut',
       data: {
@@ -381,6 +399,7 @@ function renderAnalytics(container) {
     });
 
     // ── Render Chart 4: categories doughnut ──
+    destroyChart('teamCats');
     S.charts['teamCats'] = new Chart(document.getElementById('ch-team-cats'), {
       type: 'doughnut',
       data: {
@@ -391,6 +410,7 @@ function renderAnalytics(container) {
     });
 
     // ── Render Chart 5: locations per team ──
+    destroyChart('teamLocs');
     S.charts['teamLocs'] = new Chart(document.getElementById('ch-team-locs'), {
       type: 'bar',
       data: {
@@ -402,6 +422,7 @@ function renderAnalytics(container) {
 
     // ── Render Chart 6: completion % per team (wide horizontal bar) ──
     const tPct = [...tStats].sort((a,b) => b.pct - a.pct);
+    destroyChart('teamPct');
     S.charts['teamPct'] = new Chart(document.getElementById('ch-team-pct'), {
       type: 'bar',
       data: {

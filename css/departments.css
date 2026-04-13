@@ -79,3 +79,10 @@ table.items-table{width:100%;border-collapse:collapse;font-size:13px}
 .progress-mini{height:4px;background:var(--surface3);border-radius:2px;overflow:hidden;margin-top:5px}
 .progress-mini-fill{height:100%;border-radius:2px;transition:width 0.3s}
 
+
+/* SHARED PATTERN CLASSES */
+.panel-section{padding:16px 18px;border-bottom:1px solid var(--border)}
+.loc-meta-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.detail-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}
+.detail-table th{text-align:left;padding:5px 6px;color:var(--text-muted);border-bottom:1px solid var(--border);font-weight:600}
+.detail-table td{padding:5px 6px;border-bottom:1px solid var(--border);color:var(--text)}

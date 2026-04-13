@@ -9,8 +9,8 @@ function renderProgress(container, section) {
   let tTotalItems=0, tTotalDel=0;
   ts.forEach(([tn,td]) => { const {total,del}=getTeamCounts(tn,Object.keys(td.locations||{})); tTotalItems+=total; tTotalDel+=del; });
 
-  const dPct = dTotalItems>0?Math.round(dTotalDel/dTotalItems*100):0;
-  const tPct = tTotalItems>0?Math.round(tTotalDel/tTotalItems*100):0;
+  const dPct = dTotalItems>0?Math.floor(isFinite(dTotalDel/dTotalItems)?dTotalDel/dTotalItems*100:0):0;
+  const tPct = tTotalItems>0?Math.floor(isFinite(tTotalDel/tTotalItems)?tTotalDel/tTotalItems*100:0):0;
 
   let html = `
     <div class="stats-row" style="margin-bottom:20px">
@@ -43,7 +43,7 @@ function renderProgress(container, section) {
       const c = deptColor(idx);
       const locs = Object.entries(deptData.locations||{});
       const {total, del} = getDeptCounts(deptName, Object.keys(deptData.locations||{}));
-      const pct = total>0?Math.round(del/total*100):0;
+      const pct = total>0?Math.floor(isFinite(del/total)?del/total*100:0):0;
       html += `<div class="progress-card">
         <div class="progress-card-header">
           <div>
@@ -56,7 +56,7 @@ function renderProgress(container, section) {
         <div class="progress-locs">`;
       locs.forEach(([locName]) => {
         const {total:lt, del:ld} = getLocCounts(deptName, locName);
-        const lp = lt>0?Math.round(ld/lt*100):0;
+        const lp = lt>0?Math.floor(isFinite(ld/lt)?ld/lt*100:0):0;
         const lc = lp===100?'var(--success)':lp>50?'var(--warning)':c;
         html += `<div class="progress-loc">
           <div class="progress-loc-header">
@@ -78,7 +78,7 @@ function renderProgress(container, section) {
       const c = DEPT_COLORS[(idx + 5) % DEPT_COLORS.length];
       const locs = Object.entries(teamData.locations||{});
       const {total, del} = getTeamCounts(teamName, Object.keys(teamData.locations||{}));
-      const pct = total>0?Math.round(del/total*100):0;
+      const pct = total>0?Math.floor(isFinite(del/total)?del/total*100:0):0;
       html += `<div class="progress-card">
         <div class="progress-card-header">
           <div>
@@ -91,7 +91,7 @@ function renderProgress(container, section) {
         <div class="progress-locs">`;
       locs.forEach(([locName]) => {
         const {total:lt, del:ld} = getTeamLocCounts(teamName, locName);
-        const lp = lt>0?Math.round(ld/lt*100):0;
+        const lp = lt>0?Math.floor(isFinite(ld/lt)?ld/lt*100:0):0;
         const lc = lp===100?'var(--success)':lp>50?'var(--warning)':c;
         html += `<div class="progress-loc">
           <div class="progress-loc-header">

@@ -1,19 +1,29 @@
 function teams() { return Object.entries(cd().teams || {}); }
 function teamSlug(s) { return 'TM_' + slug(s); }
 
-function dKeyTeam(teamName, locName, itemId) {
-  return `${S.champ}_${S.year}_TEAM_${teamName}_${locName}_${itemId}_del`;
+// Team delivery — stored in blob under S.data.deliveries with TEAM prefix
+function dBlobKeyTeam(teamName, locName, itemId) {
+  return `TEAM||${teamName}||${locName}||${itemId}`;
 }
 function getTeamDelivered(teamName, locName, itemId) {
-  return parseInt(localStorage.getItem(dKeyTeam(teamName, locName, itemId))||'0');
+  if (!S.data) return 0;
+  if (!S.data.deliveries) S.data.deliveries = {};
+  return S.data.deliveries[dBlobKeyTeam(teamName, locName, itemId)] || 0;
 }
 function setTeamDelivered(teamName, locName, itemId, qty) {
-  localStorage.setItem(dKeyTeam(teamName, locName, itemId), String(qty));
+  if (!S.data) return;
+  if (!S.data.deliveries) S.data.deliveries = {};
+  if (qty === 0) {
+    delete S.data.deliveries[dBlobKeyTeam(teamName, locName, itemId)];
+  } else {
+    S.data.deliveries[dBlobKeyTeam(teamName, locName, itemId)] = qty;
+  }
+  debouncedSave();
 }
 function getTeamLocCounts(teamName, locName) {
   let total = 0, del = 0;
   items().forEach(item => {
-    const q = parseInt(item.team_quantities?.[teamName]?.[locName]||0);
+    const q = parseInt(item.team_quantities?.[teamName]?.[locName]||0, 10);
     if (q > 0) { total += q; del += Math.min(getTeamDelivered(teamName, locName, item.id), q); }
   });
   return { total, del };
@@ -27,7 +37,7 @@ function getTeamItemTotal(teamName) {
   let t = 0;
   items().forEach(item => {
     const tq = item.team_quantities?.[teamName];
-    if (tq) Object.values(tq).forEach(q => t += (parseInt(q)||0));
+    if (tq) Object.values(tq).forEach(q => t += (parseInt(q, 10)||0));
   });
   return t;
 }
@@ -39,7 +49,11 @@ function renderTeamImages(teamName, teamData, tid) {
   h += '<button class="btn btn-ghost edit-only" style="font-size:12px;padding:5px 10px;flex-shrink:0" onclick="uploadTeamImage(\''+tid+'\',\''+esc(teamName)+'\')">+ File</button>';
   imgs.forEach((img, idx) => {
     h += '<div style="position:relative;display:inline-flex">';
-    h += '<img src="'+img.dataUrl+'" style="height:60px;width:auto;max-width:100px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="viewTeamImage(\''+esc(teamName)+'\','+idx+')" title="'+esc(img.caption||'')+'">';
+    if (img.dataUrl) {
+      h += '<img src="'+img.dataUrl+'" style="height:60px;width:auto;max-width:100px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="viewTeamImage(\''+esc(teamName)+'\','+idx+')" title="'+esc(img.caption||'')+'">';
+    } else {
+      h += '<div onclick="viewTeamImage(\''+esc(teamName)+'\','+idx+')" style="height:60px;width:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:6px;border:1px solid var(--border);background:var(--surface3);cursor:pointer" title="'+esc(img.caption||'')+'">'+icon('file',22)+'<span style="font-size:9px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:72px">'+esc(img.caption||'file')+'</span></div>';
+    }
     h += '<button class="edit-only" onclick="removeTeamImage(\''+tid+'\',\''+esc(teamName)+'\','+idx+')" style="position:absolute;top:-6px;right:-6px;background:#ff1744;color:#fff;border:none;border-radius:50%;width:16px;height:16px;font-size:10px;cursor:pointer;padding:0;line-height:1">x</button>';
     h += '</div>';
   });
@@ -54,22 +68,53 @@ function uploadTeamImage(tid, teamName) {
   input.onchange = e => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
+    // Disable upload button during processing
+    const btn = document.querySelector(`#team-${tid} .edit-only[onclick*="uploadTeamImage"]`);
+    if (btn) { btn.disabled = true; btn.textContent = 'Uploading…'; }
     let loaded = 0;
+    const finish = () => {
+      loaded++;
+      if (loaded === files.length) {
+        if (btn) { btn.disabled = false; btn.textContent = '+ File'; }
+        const sec = document.getElementById('timages-' + tid);
+        if (sec) sec.innerHTML = renderTeamImages(teamName, cd().teams[teamName], tid);
+      }
+    };
     files.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = ev => {
-        const teamData = cd().teams[teamName];
-        if (!teamData) return;
-        if (!teamData.images) teamData.images = [];
-        teamData.images.push({ dataUrl: ev.target.result, caption: file.name });
+      if (file.size > 1_500_000) {
+        showToast(`"${file.name}" too large (max ~1 MB). Compress or use a smaller file.`, 'error');
+        finish();
+        return;
+      }
+      const teamData = cd().teams[teamName];
+      if (!teamData) { finish(); return; }
+      if (!teamData.images) teamData.images = [];
+      if (file.type.startsWith('image/')) {
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(objectUrl);
+          const MAX_W = 800;
+          const scale = img.width > MAX_W ? MAX_W / img.width : 1;
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          teamData.images.push({ dataUrl, caption: file.name });
+          save();
+          showToast(`File attached: ${file.name}`, 'success');
+          finish();
+        };
+        img.onerror = () => { URL.revokeObjectURL(objectUrl); finish(); };
+        img.src = objectUrl;
+      } else {
+        // Non-image: store metadata only, no base64
+        teamData.images.push({ dataUrl: null, caption: file.name, meta: { name: file.name, size: file.size, type: file.type } });
         save();
-        loaded++;
-        if (loaded === files.length) {
-          const sec = document.getElementById('timages-' + tid);
-          if (sec) sec.innerHTML = renderTeamImages(teamName, cd().teams[teamName], tid);
-        }
-      };
-      reader.readAsDataURL(file);
+        showToast(`File attached: ${file.name}`, 'success');
+        finish();
+      }
     });
   };
   input.click();
@@ -238,7 +283,7 @@ function renderTeamSummary(teamName, teamData, tid) {
     let teamTotal = 0;
     const locBreakdown = [];
     locs.forEach(loc => {
-      const q = parseInt(tq[loc]||0);
+      const q = parseInt(tq[loc]||0, 10);
       if (q > 0) { teamTotal += q; locBreakdown.push({loc, q}); }
     });
     if (teamTotal === 0) return;
@@ -418,7 +463,7 @@ function buildTeamsMenuOptions(locItems) {
 function renderTeamLocDetail(teamName, locName, locInfo, tid) {
   _tctx[tid] = { teamName, locName };
   const its = items();
-  const locItems = its.filter(i => (parseInt(i.team_quantities?.[teamName]?.[locName])||0) > 0);
+  const locItems = its.filter(i => (parseInt(i.team_quantities?.[teamName]?.[locName], 10)||0) > 0);
   const { total, del } = getTeamLocCounts(teamName, locName);
 
   let html = `
@@ -451,7 +496,7 @@ function renderTeamLocDetail(teamName, locName, locInfo, tid) {
         <tbody id="tloc-items-${tid}">`;
 
   locItems.forEach(item => {
-    const qty = parseInt(item.team_quantities[teamName][locName])||0;
+    const qty = parseInt(item.team_quantities[teamName][locName], 10)||0;
     const dval = getTeamDelivered(teamName, locName, item.id);
     const pct = qty > 0 ? Math.round(dval/qty*100) : 0;
     const sc = pct===100?'var(--success)':pct>0?'var(--warning)':'var(--text-muted)';
@@ -487,7 +532,7 @@ function renderTeamLocDetail(teamName, locName, locInfo, tid) {
 function updateTeamQtyCtx(tid, itemId, val, input) {
   const {teamName, locName} = _tctx[tid]||{};
   if (!teamName) return;
-  const qty = Math.max(0, parseInt(val)||0);
+  const qty = parseQty(val);
   const item = items().find(i=>i.id===itemId);
   if (!item) return;
   if (!item.team_quantities) item.team_quantities = {};
@@ -504,8 +549,8 @@ function updateTeamDelCtx(tid, itemId, val, input) {
   const {teamName, locName} = _tctx[tid]||{};
   if (!teamName) return;
   const item = items().find(i=>i.id===itemId);
-  const qty = parseInt(item?.team_quantities?.[teamName]?.[locName]||0);
-  const d = Math.min(Math.max(0,parseInt(val)||0), qty);
+  const qty = parseInt(item?.team_quantities?.[teamName]?.[locName]||0, 10);
+  const d = Math.min(parseQty(val), qty);
   if (input) input.value = d;
   setTeamDelivered(teamName, locName, itemId, d);
   const row = input?.closest('tr');
@@ -544,7 +589,7 @@ function addItemToTeamLocCtx(tid) {
   const qtyEl = document.getElementById(`tadd-qty-${tid}`);
   const itemId = sel?.value;
   if (!itemId) return showToast('Select an item first','error');
-  const qty = Math.max(1, parseInt(qtyEl?.value)||1);
+  const qty = Math.max(1, parseInt(qtyEl?.value, 10)||1);
   const item = items().find(i=>i.id===itemId);
   if (!item) return;
   if (!item.team_quantities) item.team_quantities = {};
@@ -565,7 +610,7 @@ function markTeamLocDoneCtx(tid) {
   const {total, del} = getTeamLocCounts(teamName, locName);
   const allDone = total > 0 && del === total;
   items().forEach(item => {
-    const qty = parseInt(item.team_quantities?.[teamName]?.[locName]||0);
+    const qty = parseInt(item.team_quantities?.[teamName]?.[locName]||0, 10);
     if (qty > 0) setTeamDelivered(teamName, locName, item.id, allDone ? 0 : qty);
   });
   reRenderTeamDetail(tid);
@@ -616,6 +661,11 @@ function deleteTeamLocByTab(btn) {
   if (!team) return;
   delete team.locations[locName];
   items().forEach(item => { if (item.team_quantities?.[teamName]) delete item.team_quantities[teamName][locName]; });
+  // Remove delivery entries for this team+loc
+  if (S.data.deliveries) {
+    const pfx = `TEAM||${teamName}||${locName}||`;
+    Object.keys(S.data.deliveries).forEach(k => { if (k.startsWith(pfx)) delete S.data.deliveries[k]; });
+  }
   if (S.activeTeamLoc[tid] === locName) delete S.activeTeamLoc[tid];
   if (_tctx[tid]?.locName === locName) delete _tctx[tid];
   save();
@@ -671,7 +721,7 @@ function refreshTeamTotalCell(itemId) {
   const item = items().find(i=>i.id===itemId);
   if (!item) return;
   let teamsTotal = 0;
-  Object.values(item.team_quantities||{}).forEach(tq => Object.values(tq).forEach(q => teamsTotal += (parseInt(q)||0)));
+  Object.values(item.team_quantities||{}).forEach(tq => Object.values(tq).forEach(q => teamsTotal += (parseInt(q, 10)||0)));
   // Teams column is index 3 (0=name,1=cat,2=depts,3=teams,4=total)
   const cells = row.querySelectorAll('td');
   if (cells[3]) cells[3].textContent = teamsTotal;
@@ -684,6 +734,11 @@ function deleteTeam(teamName) {
   if (!confirm(`Delete team "${teamName}" and all its data?`)) return;
   delete cd().teams[teamName];
   items().forEach(item => { if (item.team_quantities) delete item.team_quantities[teamName]; recalcTotalNeeded(item); recalcDeficit(item); });
+  // Remove all delivery entries for this team
+  if (S.data.deliveries) {
+    const pfx = `TEAM||${teamName}||`;
+    Object.keys(S.data.deliveries).forEach(k => { if (k.startsWith(pfx)) delete S.data.deliveries[k]; });
+  }
   save();
   renderTab('teams');
   showToast(`Team "${teamName}" deleted`,'success');
@@ -715,18 +770,16 @@ function renameTeam(tid, oldName, newName) {
       delete item.team_quantities[oldName];
     }
   });
-  // 3. Rename delivery localStorage keys
-  const prefix = S.champ + '_' + S.year + '_TEAM_' + oldName + '_';
-  const newPfx = S.champ + '_' + S.year + '_TEAM_' + newName + '_';
-  const toRename = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
-    if (k && k.startsWith(prefix)) toRename.push(k);
+  // 3. Rename delivery blob keys: TEAM||{teamName}||... → TEAM||{newName}||...
+  if (S.data.deliveries) {
+    const oldPfx = `TEAM||${oldName}||`;
+    const newBlobPfx = `TEAM||${newName}||`;
+    const toRename = Object.keys(S.data.deliveries).filter(k => k.startsWith(oldPfx));
+    toRename.forEach(k => {
+      S.data.deliveries[newBlobPfx + k.slice(oldPfx.length)] = S.data.deliveries[k];
+      delete S.data.deliveries[k];
+    });
   }
-  toRename.forEach(k => {
-    localStorage.setItem(newPfx + k.slice(prefix.length), localStorage.getItem(k));
-    localStorage.removeItem(k);
-  });
   // 4. Update S.openTeam if it was this team
   if (S.openTeam === tid) S.openTeam = teamSlug(newName);
   save();
@@ -770,8 +823,8 @@ function addTeam() {
   if (!name) return showToast('Enter a team name','error');
   if (!cd().teams) cd().teams = {};
   if (cd().teams[name]) return showToast('Team already exists','error');
-  const villa  = parseInt(document.getElementById('new-team-villa')?.value)||0;
-  const pitbox = parseInt(document.getElementById('new-team-pitbox')?.value)||0;
+  const villa  = parseInt(document.getElementById('new-team-villa', 10)?.value)||0;
+  const pitbox = parseInt(document.getElementById('new-team-pitbox', 10)?.value)||0;
   const autoLoc = document.getElementById('new-team-autoloc')?.checked;
   const locations = {};
   if (autoLoc) {
@@ -813,8 +866,8 @@ function showEditTeamModal(teamName) {
 function saveTeamMeta(teamName) {
   const team = cd().teams[teamName];
   if (!team) return;
-  team.villa  = parseInt(document.getElementById('edit-team-villa')?.value)||0;
-  team.pitbox = parseInt(document.getElementById('edit-team-pitbox')?.value)||0;
+  team.villa  = parseInt(document.getElementById('edit-team-villa', 10)?.value)||0;
+  team.pitbox = parseInt(document.getElementById('edit-team-pitbox', 10)?.value)||0;
   save();
   closeModal();
   renderTab('teams');
@@ -876,7 +929,7 @@ function exportTeam(teamName) {
   const rows = [['Item','Category','Location','Qty Requested','Delivered','Bump In','Bump Out','LIC Stock','MOYS LIC','Aspire','Total Needed','Deficit','Notes']];
   Object.entries(team.locations||{}).forEach(([locName, locInfo]) => {
     items().forEach(item => {
-      const qty = parseInt(item.team_quantities?.[teamName]?.[locName]||0);
+      const qty = parseInt(item.team_quantities?.[teamName]?.[locName]||0, 10);
       if (!qty) return;
       const del = getTeamDelivered(teamName, locName, item.id);
       const avail = (item.lic_inventory||0) + (item.moys_lic||0) + (item.aspire||0);

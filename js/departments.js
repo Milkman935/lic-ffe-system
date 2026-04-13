@@ -18,18 +18,16 @@ function renameDept(input) {
   });
   // Update _ctx entries
   Object.keys(_ctx).forEach(d => { if (_ctx[d] && _ctx[d].deptName === oldName) _ctx[d].deptName = newName; });
-  // Update delivery keys in localStorage
-  const prefix = `${S.champ}_${S.year}_${oldName}_`;
-  const newPrefix = `${S.champ}_${S.year}_${newName}_`;
-  const toMove = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
-    if (k && k.startsWith(prefix) && k.endsWith('_del')) toMove.push(k);
+  // Update delivery keys in blob: rename dept prefix in deliveries
+  if (S.data.deliveries) {
+    const oldPfx = `${oldName}||`;
+    const newPfx = `${newName}||`;
+    const toRename = Object.keys(S.data.deliveries).filter(k => k.startsWith(oldPfx));
+    toRename.forEach(k => {
+      S.data.deliveries[newPfx + k.slice(oldPfx.length)] = S.data.deliveries[k];
+      delete S.data.deliveries[k];
+    });
   }
-  toMove.forEach(k => {
-    localStorage.setItem(newPrefix + k.slice(prefix.length), localStorage.getItem(k));
-    localStorage.removeItem(k);
-  });
   save();
   showToast(`Renamed to "${newName}"`, 'success');
   renderTab('matrix');
@@ -42,7 +40,7 @@ function getDeptTotal(deptName) {
   let t = 0;
   items().forEach(item => {
     const dq = item.dept_quantities?.[deptName];
-    if (dq) Object.values(dq).forEach(q => t += (parseInt(q)||0));
+    if (dq) Object.values(dq).forEach(q => t += (parseInt(q, 10)||0));
   });
   return t;
 }
@@ -166,7 +164,7 @@ function renderDeptSummary(deptName, deptData, did) {
     let deptTotal = 0;
     const locBreakdown = [];
     locs.forEach(loc => {
-      const q = parseInt(dq[loc]||0);
+      const q = parseInt(dq[loc]||0, 10);
       if (q > 0) { deptTotal += q; locBreakdown.push({loc, q}); }
     });
     if (deptTotal === 0) return;
@@ -241,7 +239,7 @@ const _ctx = {};  // did -> {deptName, locName}
 function renderLocDetail(deptName, locName, locInfo, did) {
   _ctx[did] = { deptName, locName };   // register context — all handlers read from here
   const its = items();
-  const locItems = its.filter(i => (parseInt(i.dept_quantities?.[deptName]?.[locName])||0) > 0);
+  const locItems = its.filter(i => (parseInt(i.dept_quantities?.[deptName]?.[locName], 10)||0) > 0);
   const { total, del } = getLocCounts(deptName, locName);
 
   let html = `
@@ -278,7 +276,7 @@ function renderLocDetail(deptName, locName, locInfo, did) {
         <tbody id="loc-items-${did}">`;
 
   locItems.forEach(item => {
-    const qty = parseInt(item.dept_quantities[deptName][locName])||0;
+    const qty = parseInt(item.dept_quantities[deptName][locName], 10)||0;
     const dval = getDelivered(deptName, locName, item.id);
     const pct = qty > 0 ? Math.round(dval/qty*100) : 0;
     const sc = pct===100?'var(--success)':pct>0?'var(--warning)':'var(--text-muted)';
@@ -317,8 +315,8 @@ function updateDelCtx(did, itemId, val, input) {
   const {deptName, locName} = _ctx[did]||{};
   if (!deptName) return;
   const item = items().find(i=>i.id===itemId);
-  const qty = parseInt(item?.dept_quantities?.[deptName]?.[locName]||0);
-  const d = Math.min(Math.max(0,parseInt(val)||0), qty);
+  const qty = parseInt(item?.dept_quantities?.[deptName]?.[locName]||0, 10);
+  const d = Math.min(parseQty(val), qty);
   if (input) input.value = d;
   setDelivered(deptName, locName, itemId, d);
   // Update status cell in same row
@@ -339,7 +337,7 @@ function updateDelCtx(did, itemId, val, input) {
 function updateQtyCtx(did, itemId, val, input) {
   const {deptName, locName} = _ctx[did]||{};
   if (!deptName) return;
-  const qty = Math.max(0, parseInt(val)||0);
+  const qty = parseQty(val);
   const item = items().find(i=>i.id===itemId);
   if (!item) return;
   if (!item.dept_quantities[deptName]) item.dept_quantities[deptName] = {};
@@ -371,7 +369,7 @@ function addItemToLocCtx(did) {
   const qtyEl = document.getElementById(`add-qty-${did}`);
   const itemId = sel?.value;
   if (!itemId) return showToast('Select an item first','error');
-  const qty = Math.max(1, parseInt(qtyEl?.value)||1);
+  const qty = Math.max(1, parseInt(qtyEl?.value, 10)||1);
   const item = items().find(i=>i.id===itemId);
   if (!item) return;
   if (!item.dept_quantities[deptName]) item.dept_quantities[deptName] = {};
@@ -391,7 +389,7 @@ function markLocDoneCtx(did) {
   const {total, del} = getLocCounts(deptName, locName);
   const allDone = total > 0 && del === total;
   items().forEach(item => {
-    const qty = parseInt(item.dept_quantities?.[deptName]?.[locName]||0);
+    const qty = parseInt(item.dept_quantities?.[deptName]?.[locName]||0, 10);
     if (qty > 0) setDelivered(deptName, locName, item.id, allDone ? 0 : qty);
   });
   reRenderDetail(did);
@@ -448,7 +446,7 @@ function refreshDelCounter(did, deptName, locName) {
 function markLocDone(deptName, locName, did) {
   // Set all delivered quantities in localStorage
   items().forEach(item => {
-    const qty = parseInt(item.dept_quantities?.[deptName]?.[locName]||0);
+    const qty = parseInt(item.dept_quantities?.[deptName]?.[locName]||0, 10);
     if (qty > 0) setDelivered(deptName, locName, item.id, qty);
   });
   // Full re-render of the location detail — reads fresh values from localStorage
@@ -478,13 +476,18 @@ function deleteDept(deptName) {
   if (!confirm(`Delete department "${deptName}" and all its location data?`)) return;
   delete cd().departments[deptName];
   items().forEach(item => { delete item.dept_quantities[deptName]; });
+  // Remove all delivery entries for this dept
+  if (S.data.deliveries) {
+    const pfx = `${deptName}||`;
+    Object.keys(S.data.deliveries).forEach(k => { if (k.startsWith(pfx)) delete S.data.deliveries[k]; });
+  }
   save();
   renderTab('matrix');
   showToast(`Department "${deptName}" deleted`, 'success');
 }
 
 function updateQty(deptName, locName, itemId, val, did) {
-  const qty = Math.max(0, parseInt(val)||0);
+  const qty = parseQty(val);
   const item = items().find(i=>i.id===itemId);
   if (!item) return;
   if (!item.dept_quantities[deptName]) item.dept_quantities[deptName] = {};
@@ -495,8 +498,8 @@ function updateQty(deptName, locName, itemId, val, did) {
 
 function updateDel(deptName, locName, itemId, val, did) {
   const item = items().find(i=>i.id===itemId);
-  const qty = parseInt(item?.dept_quantities?.[deptName]?.[locName]||0);
-  const d = Math.min(Math.max(0,parseInt(val)||0), qty);
+  const qty = parseInt(item?.dept_quantities?.[deptName]?.[locName]||0, 10);
+  const d = Math.min(parseQty(val), qty);
   setDelivered(deptName, locName, itemId, d);
   // Update the status cell inline — find by class to avoid cell index issues
   const tbody = document.getElementById(`loc-items-${did}`);
@@ -556,7 +559,7 @@ function addItemToLoc(deptName, locName, did) {
   const qtyEl = document.getElementById(`add-qty-${did}`);
   const itemId = sel?.value;
   if (!itemId) return showToast('Select an item first','error');
-  const qty = Math.max(1, parseInt(qtyEl?.value)||1);
+  const qty = Math.max(1, parseInt(qtyEl?.value, 10)||1);
   const item = items().find(i=>i.id===itemId);
   if (!item) return;
   if (!item.dept_quantities[deptName]) item.dept_quantities[deptName] = {};
@@ -606,6 +609,11 @@ function deleteLocationByTab(btn) {
   if (!dept) return;
   delete dept.locations[locName];
   items().forEach(item => { if (item.dept_quantities?.[deptName]) delete item.dept_quantities[deptName][locName]; });
+  // Remove delivery entries for this dept+loc
+  if (S.data.deliveries) {
+    const pfx = `${deptName}||${locName}||`;
+    Object.keys(S.data.deliveries).forEach(k => { if (k.startsWith(pfx)) delete S.data.deliveries[k]; });
+  }
   if (S.activeLoc[did] === locName) delete S.activeLoc[did];
   if (_ctx[did]?.locName === locName) delete _ctx[did];
   save();
@@ -615,16 +623,20 @@ function deleteLocationByTab(btn) {
   showToast('Location deleted','success');
 }
 
+let _filterMatrixTimer = null;
 function filterMatrix(q) {
-  q = (q||'').toLowerCase();
-  const df = document.getElementById('mx-dept')?.value||'';
-  document.querySelectorAll('.dept-block').forEach(block => {
-    const dn = block.dataset.dept;
-    const dMatch = !df || dn === df;
-    const nameMatch = !q || dn.toLowerCase().includes(q) ||
-      items().some(item => item.name.toLowerCase().includes(q) && item.dept_quantities?.[dn]);
-    block.style.display = (dMatch && nameMatch) ? '' : 'none';
-  });
+  if (_filterMatrixTimer) clearTimeout(_filterMatrixTimer);
+  _filterMatrixTimer = setTimeout(() => {
+    q = (q||'').toLowerCase();
+    const df = document.getElementById('mx-dept')?.value||'';
+    document.querySelectorAll('.dept-block').forEach(block => {
+      const dn = block.dataset.dept;
+      const dMatch = !df || dn === df;
+      const nameMatch = !q || dn.toLowerCase().includes(q) ||
+        items().some(item => item.name.toLowerCase().includes(q) && item.dept_quantities?.[dn]);
+      block.style.display = (dMatch && nameMatch) ? '' : 'none';
+    });
+  }, 120);
 }
 
 // ── MODALS ──

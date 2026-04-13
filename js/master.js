@@ -4,10 +4,10 @@ function renderMaster(container) {
   // Show import banner after render (async so container is in DOM)
   setTimeout(() => maybeShowImportBanner(container), 0);
 
-  // Analytics
-  const totalNeeded = its.reduce((s,i) => s+(i.total_needed||0), 0);
-  const needProcurement = its.filter(i => (i.deficit||0) > 0);
-  const totalDeficit = needProcurement.reduce((s,i) => s+(i.deficit||0), 0);
+  // Analytics — use computed functions, never stored total_needed/deficit
+  const totalNeeded = its.reduce((s,i) => s+itemTotal(i), 0);
+  const needProcurement = its.filter(i => itemDeficit(i) > 0);
+  const totalDeficit = needProcurement.reduce((s,i) => s+itemDeficit(i), 0);
   // Dept with most demand
   const deptDemand = allDepts.map(([n]) => ({ name:n, total: getDeptTotal(n) })).sort((a,b)=>b.total-a.total);
   const topDept = deptDemand[0];
@@ -46,7 +46,7 @@ function renderMaster(container) {
         <option value="deficit">Has Deficit</option>
         <option value="ok">No Deficit</option>
       </select>
-      <span style="color:var(--text-muted);font-size:12px;margin-left:auto">${its.length} items</span>
+      <span class="inv-count-label" style="color:var(--text-muted);font-size:12px;margin-left:auto">${its.length} items</span>
     </div>
     <div class="inventory-table-wrap">
       <table class="inv-table">
@@ -70,28 +70,27 @@ function renderMaster(container) {
 
   its.forEach(item => {
     const cat = item.category || categorize(item.name);
-    // Always compute deficit live — never trust stored value which may be stale from Excel import
-    const avail = (item.lic_inventory||0) + (item.moys_lic||0) + (item.aspire||0);
-    const deficit = Math.max(0, (item.total_needed||0) - avail);
-    item.deficit = deficit; // keep stored value in sync
-    const surplus = avail - (item.total_needed||0);
+    const tot = itemTotal(item);
+    const avail = itemAvail(item);
+    const deficit = itemDeficit(item);
+    const surplus = avail - tot;
     const dc = deficit > 20 ? 'bad' : deficit > 0 ? 'warn' : 'ok';
-    const dLabel = deficit > 0 ? `−${deficit}` : surplus > 0 ? `+${surplus}` : '✓ 0';
+    const dLabel = deficit > 0 ? `−${deficit}` : surplus > 0 ? `+${surplus} surplus` : '✓ 0';
     const activeDepts = Object.keys(item.dept_quantities||{}).filter(d => {
       const dq = item.dept_quantities[d];
-      return dq && Object.values(dq).some(q=>(parseInt(q)||0)>0);
+      return dq && Object.values(dq).some(q=>(parseInt(q, 10)||0)>0);
     });
     // Dept total and team total separately
     let deptsTotal = 0, teamsTotal = 0;
-    Object.values(item.dept_quantities||{}).forEach(dq => Object.values(dq).forEach(q => deptsTotal += (parseInt(q)||0)));
-    Object.values(item.team_quantities||{}).forEach(tq => Object.values(tq).forEach(q => teamsTotal += (parseInt(q)||0)));
+    Object.values(item.dept_quantities||{}).forEach(dq => Object.values(dq).forEach(q => deptsTotal += (parseInt(q, 10)||0)));
+    Object.values(item.team_quantities||{}).forEach(tq => Object.values(tq).forEach(q => teamsTotal += (parseInt(q, 10)||0)));
     html += `
-      <tr data-item-id="${item.id}" data-name="${esc(item.name.toLowerCase())}" data-cat="${esc(cat)}" data-deficit="${deficit}" data-total="${item.total_needed||0}" data-depts="${deptsTotal}" data-teamtotal="${teamsTotal}">
+      <tr data-item-id="${item.id}" data-name="${esc(item.name.toLowerCase())}" data-cat="${esc(cat)}" data-deficit="${deficit}" data-total="${tot}" data-depts="${deptsTotal}" data-teamtotal="${teamsTotal}">
         <td style="max-width:220px"><input class="notes-input" style="font-weight:600;width:100%" value="${esc(item.name)}" onblur="updateItemName('${item.id}',this.value)" title="Click to edit name"></td>
         <td><span class="cat-badge">${esc(cat)}</span></td>
         <td style="font-weight:600;color:var(--text-muted)">${deptsTotal||0}</td>
         <td style="font-weight:600;color:var(--accent)">${teamsTotal||0}</td>
-        <td style="font-weight:700" class="total-cell-${item.id}">${item.total_needed||0}</td>
+        <td style="font-weight:700" class="total-cell-${item.id}">${tot}</td>
         <td><input class="inv-edit-input" type="number" min="0" value="${item.lic_inventory||0}" oninput="updateInv('${item.id}','lic_inventory',this.value)"></td>
         <td><input class="inv-edit-input" type="number" min="0" value="${item.moys_lic||0}" oninput="updateInv('${item.id}','moys_lic',this.value)"></td>
         <td><input class="inv-edit-input" type="number" min="0" value="${item.aspire||0}" oninput="updateInv('${item.id}','aspire',this.value)"></td>
@@ -102,20 +101,33 @@ function renderMaster(container) {
       </tr>`;
   });
 
+  if (!its.length) {
+    html += `<tr><td colspan="12">${emptyState('search','No items yet','Click "+ Item" to add your first inventory item')}</td></tr>`;
+  }
   html += `</tbody></table></div>`;
   container.innerHTML = html;
 }
+let _filterInvTimer = null;
 function filterInv(q) {
-  q = (q||'').toLowerCase();
-  const cat = document.getElementById('inv-cat')?.value||'';
-  const st = document.getElementById('inv-status')?.value||'';
-  document.querySelectorAll('#inv-tbody tr').forEach(r => {
-    const nm = r.dataset.name?.includes(q) !== false;
-    const cm = !cat || r.dataset.cat === cat;
-    const def = parseInt(r.dataset.deficit||'0');
-    const sm = !st || (st==='deficit' ? def>0 : def<=0);
-    r.style.display = ((!q||nm) && cm && sm) ? '' : 'none';
-  });
+  if (_filterInvTimer) clearTimeout(_filterInvTimer);
+  _filterInvTimer = setTimeout(() => {
+    q = (q||'').toLowerCase();
+    const cat = document.getElementById('inv-cat')?.value||'';
+    const st = document.getElementById('inv-status')?.value||'';
+    let visible = 0;
+    document.querySelectorAll('#inv-tbody tr').forEach(r => {
+      const nm = r.dataset.name?.includes(q) !== false;
+      const cm = !cat || r.dataset.cat === cat;
+      const def = parseInt(r.dataset.deficit||'0', 10);
+      const sm = !st || (st==='deficit' ? def>0 : def<=0);
+      const show = (!q||nm) && cm && sm;
+      r.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    const countEl = document.querySelector('.inv-count-label');
+    const total = document.querySelectorAll('#inv-tbody tr').length;
+    if (countEl) countEl.textContent = (visible < total) ? `${visible} of ${total} items` : `${total} items`;
+  }, 120);
 }
 function sortInv(field) {
   const tbody = document.getElementById('inv-tbody');
@@ -124,22 +136,18 @@ function sortInv(field) {
   rows.sort((a,b) => {
     if (field === 'name') return (a.dataset.name||'').localeCompare(b.dataset.name||'');
     const key = field === 'deficit' ? 'deficit' : field === 'depts' ? 'depts' : field === 'teamtotal' ? 'teamtotal' : 'total';
-    return parseInt(b.dataset[key]||'0') - parseInt(a.dataset[key]||'0');
+    return parseInt(b.dataset[key]||'0', 10) - parseInt(a.dataset[key]||'0', 10);
   });
   rows.forEach(r => tbody.appendChild(r));
 }
 function recalcTotalNeeded(item) {
-  let t = 0;
-  Object.values(item.dept_quantities||{}).forEach(dq => Object.values(dq).forEach(q => t += (parseInt(q)||0)));
-  Object.values(item.team_quantities||{}).forEach(tq => Object.values(tq).forEach(q => t += (parseInt(q)||0)));
-  item.total_needed = t;
+  item.total_needed = itemTotal(item);
 }
 function recalcDeficit(item) {
-  const avail = (item.lic_inventory||0)+(item.moys_lic||0)+(item.aspire||0);
-  item.deficit = Math.max(0, (item.total_needed||0)-avail);
+  item.deficit = itemDeficit(item);
 }
 function recalcAllDeficits() {
-  items().forEach(item => recalcDeficit(item));
+  items().forEach(item => { recalcTotalNeeded(item); recalcDeficit(item); });
   save();
 }
 
@@ -151,23 +159,25 @@ function refreshDeficitPill(itemId) {
   if (!item) return;
   const row = document.querySelector(`#inv-tbody tr[data-item-id="${itemId}"]`);
   if (!row) return;
-  const deficit = item.deficit||0;
+  const tot = itemTotal(item);
+  const avail = itemAvail(item);
+  const deficit = itemDeficit(item);
+  const surplus = avail - tot;
   const dc = deficit > 20 ? 'bad' : deficit > 0 ? 'warn' : 'ok';
-  const dLabel = deficit > 0 ? `−${deficit}` : `✓ 0`;
+  const dLabel = deficit > 0 ? `−${deficit}` : surplus > 0 ? `+${surplus} surplus` : '✓ 0';
   const pill = row.querySelector('.deficit-pill');
   if (pill) { pill.className = `deficit-pill ${dc}`; pill.textContent = dLabel; }
   row.dataset.deficit = deficit;
   // Also update the "Needed" total cell
   const totalCell = row.querySelector(`.total-cell-${itemId}`);
-  if (totalCell) totalCell.textContent = item.total_needed||0;
-  row.dataset.total = item.total_needed||0;
+  if (totalCell) totalCell.textContent = tot;
+  row.dataset.total = tot;
 }
 function updateInv(itemId, field, val) {
   const item = items().find(i=>i.id===itemId);
   if (!item) return;
-  const numVal = Math.max(0, parseInt(val)||0);
+  const numVal = parseQty(val);
   item[field] = numVal;
-  recalcDeficit(item);
   refreshDeficitPill(itemId);
   debouncedSave();
   // Debounce the sync panel so it doesn't fire on every keystroke
@@ -196,6 +206,7 @@ function updateItemName(itemId, val) {
   if (oldName === val) return;
   item.name = val;
   save();
+  showToast(`Renamed to "${val}"`, 'success');
   showSyncPanel(
     'Rename in other championships?',
     `"<strong>${esc(oldName)}</strong>" → "<strong>${esc(val)}</strong>"`,
@@ -217,6 +228,10 @@ function deleteItem(itemId) {
   // Stash for undo before splicing
   _deletedItem = { item: JSON.parse(JSON.stringify(item)), idx, champ: S.champ, year: S.year };
   cd().items.splice(idx, 1);
+  // Remove all delivery entries for this item
+  if (S.data.deliveries) {
+    Object.keys(S.data.deliveries).forEach(k => { if (k.endsWith(`||${itemId}`)) delete S.data.deliveries[k]; });
+  }
   save();
   renderTab('master');
   showUndoToast(`"${item.name}" removed`);
@@ -236,7 +251,7 @@ function showDeptPopover(e, itemId) {
   if (!item) return;
   const activeDepts = Object.keys(item.dept_quantities||{}).filter(d => {
     const dq = item.dept_quantities[d];
-    return dq && Object.values(dq).some(q=>(parseInt(q)||0)>0);
+    return dq && Object.values(dq).some(q=>(parseInt(q, 10)||0)>0);
   });
   if (!activeDepts.length) return;
   const pop = document.createElement('div');
