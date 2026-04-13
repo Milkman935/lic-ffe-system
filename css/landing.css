@@ -30,17 +30,18 @@ body.light #landing { background: #eaecf1; }
   z-index: 1; flex-shrink: 0;
 }
 .lic-badge {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: rgba(128,128,128,0.1);
-  border: 1px solid rgba(128,128,128,0.2);
-  padding: 6px 18px; border-radius: 50px; margin-bottom: 20px;
-  font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase;
-  color: var(--text-muted);
+  display: inline-flex; align-items: center;
+  background: rgba(128,128,128,0.08);
+  border: 1px solid rgba(128,128,128,0.18);
+  padding: 10px 24px; border-radius: 50px; margin-bottom: 20px;
 }
-.lic-badge::before {
-  content: ''; width: 6px; height: 6px;
-  background: var(--success); border-radius: 50%;
-  animation: pulse 2s infinite;
+.lic-logo {
+  height: 22px; width: auto;
+  display: block;
+  filter: brightness(0.9);
+}
+body.light .lic-logo {
+  filter: brightness(0.6) saturate(1.2);
 }
 @keyframes pulse {
   0%,100% { opacity:1; transform:scale(1) }
