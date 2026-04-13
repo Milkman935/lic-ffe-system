@@ -1,0 +1,28 @@
+/* MODALS */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.modal-overlay.hidden{display:none}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:26px;width:100%;max-width:480px;max-height:88vh;overflow-y:auto}
+.modal-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{background:none;border:none;color:var(--text-muted);font-size:22px;cursor:pointer;line-height:1}
+.form-group{margin-bottom:14px}
+.form-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:6px;display:block}
+.form-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;transition:border-color 0.2s}
+.form-input:focus{border-color:var(--champ-color)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+
+/* TOAST */
+#toast{position:fixed;bottom:20px;right:20px;z-index:300;background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:13px;color:var(--text);transform:translateY(80px);opacity:0;transition:all 0.3s;box-shadow:var(--shadow);max-width:300px}
+#toast.show{transform:translateY(0);opacity:1}
+#toast.success{border-left:3px solid var(--success)}
+#toast.error{border-left:3px solid var(--danger)}
+#undo-toast{position:fixed;bottom:20px;left:20px;z-index:301;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:10px;padding:13px 16px;font-size:13px;color:var(--text);transform:translateY(80px);opacity:0;transition:all 0.3s;box-shadow:0 4px 24px rgba(0,0,0,0.3);max-width:320px;display:none}
+#undo-toast.show{transform:translateY(0);opacity:1;display:block}
+.undo-toast-row{display:flex;align-items:center;gap:10px}
+.undo-toast-msg{flex:1;font-size:13px}
+.undo-btn{background:var(--champ-color);color:#fff;border:none;border-radius:5px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.undo-btn:hover{filter:brightness(1.15)}
+.undo-progress{height:3px;background:var(--surface3);border-radius:2px;margin-top:10px;overflow:hidden}
+.undo-progress-fill{height:100%;background:var(--champ-color);border-radius:2px;transition:width linear}
+.hidden{display:none!important}
+</style>

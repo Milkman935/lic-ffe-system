@@ -1,0 +1,48 @@
+/* LANDING */
+#landing{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;transition:background 0.3s}
+body:not(.light) #landing{background:radial-gradient(ellipse at 50% 30%,#1a0a1e 0%,#0a0a0f 70%)}
+body.light #landing{background:radial-gradient(ellipse at 50% 30%,#e8edf8 0%,#f0f2f5 70%)}
+.landing-bg{position:absolute;inset:0;opacity:0.05;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23888' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C%2Fg%3E%3C%2Fsvg%3E")}
+.landing-header{text-align:center;margin-bottom:48px;z-index:1}
+.lic-badge{display:inline-flex;align-items:center;gap:10px;background:rgba(128,128,128,0.1);border:1px solid rgba(128,128,128,0.2);padding:8px 20px;border-radius:50px;margin-bottom:24px;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted)}
+.lic-badge::before{content:'';width:8px;height:8px;background:var(--success);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+.landing-title{font-size:clamp(26px,4vw,48px);font-weight:800;letter-spacing:-1px;color:var(--text)}
+.landing-title span{color:var(--champ-color)}
+.landing-subtitle{color:var(--text-muted);font-size:15px;margin-top:8px;letter-spacing:1px}
+.champ-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;z-index:1;max-width:1020px;width:100%;padding:0 24px}
+.champ-card{position:relative;cursor:pointer;border-radius:20px;overflow:hidden;border:1px solid var(--border);background:var(--surface);transition:transform 0.3s,box-shadow 0.3s,border-color 0.3s;padding:36px 28px}
+.champ-card:hover{transform:translateY(-8px)}
+.champ-card.f1{--c:#e10600}
+.champ-card.wec{--c:#0067ff}
+.champ-card.motogp{--c:#ff6900}
+.champ-card:hover{border-color:var(--c)}
+.champ-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--c)}
+.champ-logo{margin-bottom:16px;height:72px;width:100%;display:flex;align-items:center}
+.champ-logo-img{width:100%;height:100%;object-fit:contain;object-position:left center;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.3));transition:transform 0.3s}
+.champ-card:hover .champ-logo-img{transform:scale(1.05)}
+.champ-name{font-size:26px;font-weight:800;color:var(--text)}
+.champ-series{font-size:12px;color:var(--text-muted);margin:4px 0 20px;letter-spacing:1px;text-transform:uppercase}
+.champ-meta{display:flex;flex-direction:column;gap:6px}
+.champ-meta-row{display:flex;justify-content:space-between;font-size:13px}
+.champ-meta-label{color:var(--text-muted)}
+.champ-meta-val{color:var(--text);font-weight:600}
+.champ-enter-btn{margin-top:24px;width:100%;padding:12px;border:none;border-radius:8px;background:var(--c);color:#fff;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:opacity 0.2s}
+.champ-enter-btn:hover{opacity:.85}
+.landing-theme-btn{position:fixed;top:20px;right:20px;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;transition:all 0.2s;box-shadow:var(--shadow)}
+.landing-theme-btn:hover{transform:scale(1.1)}
+
+/* YEAR PICKER overlay */
+#year-picker{position:fixed;inset:0;z-index:150;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px)}
+body.light #year-picker{background:rgba(200,210,230,0.6)}
+#year-picker.open{display:flex}
+.year-modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px;text-align:center;min-width:360px;box-shadow:var(--shadow)}
+.year-modal-title{font-size:22px;font-weight:800;margin-bottom:6px;color:var(--text)}
+.year-modal-sub{font-size:13px;color:var(--text-muted);margin-bottom:32px}
+.year-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
+.year-btn{padding:18px;border:1px solid var(--border);border-radius:12px;background:var(--surface2);color:var(--text);font-size:18px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.year-btn:hover{border-color:var(--champ-color);color:var(--champ-color);transform:scale(1.04)}
+.year-add-btn{width:100%;padding:12px;border:1px dashed var(--border);border-radius:10px;background:none;color:var(--text-muted);font-size:14px;cursor:pointer;transition:all 0.2s;margin-top:4px}
+.year-add-btn:hover{border-color:var(--champ-color);color:var(--champ-color)}
+.year-cancel{margin-top:12px;background:none;border:none;color:var(--text-muted);font-size:13px;cursor:pointer;padding:6px}
+.year-cancel:hover{color:var(--text)}

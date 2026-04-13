@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "lic-ffe",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["/tmp/serve3.py"],
+      "port": 7789
+    }
+  ]
+}
