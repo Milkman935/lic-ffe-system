@@ -165,7 +165,7 @@ body:not(.light) .champ-panel:hover::after {
 }
 /* MotoGP logo slightly larger to visually match F1 & WEC */
 .champ-panel.motogp .panel-logo-wrap .champ-logo-img {
-  max-width: 200px; width: 100%;
+  max-width: 240px; width: 110%;
 }
 .champ-panel:hover .panel-logo-wrap .champ-logo-img { transform: scale(1.1); }
 
