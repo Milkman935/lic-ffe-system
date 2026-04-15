@@ -145,6 +145,16 @@ function renderTeams(container) {
   let html = `
     <div class="toolbar">
       <input class="search-box" id="tm-search" placeholder="Search teams…" oninput="filterTeams(this.value)">
+      <button class="btn btn-ghost" style="font-size:12px;padding:5px 12px;margin-left:auto" onclick="togglePOFPanel()">
+        ${icon('download',13)} POF Import
+      </button>
+    </div>
+    <div id="pof-import-panel" style="display:none;border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:0 0 12px;background:var(--surface2)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <span style="font-size:13px;font-weight:700;color:var(--text)">POF Submissions — ${(S.champ||'').toUpperCase()} ${S.year}</span>
+        <button class="btn btn-ghost" style="font-size:11px;padding:3px 8px" onclick="refreshPOFPanel()">↺ Refresh</button>
+      </div>
+      <div id="pof-panel-content"></div>
     </div>
     <div class="dept-accordion" id="team-accordion">`;
 
@@ -200,6 +210,24 @@ function filterTeams(q) {
     const name = (el.dataset.team||'').toLowerCase();
     el.style.display = (!q || name.includes(q)) ? '' : 'none';
   });
+}
+
+function togglePOFPanel() {
+  const panel = document.getElementById('pof-import-panel');
+  if (!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : '';
+  if (!isOpen) refreshPOFPanel();
+}
+
+function refreshPOFPanel() {
+  const content = document.getElementById('pof-panel-content');
+  if (!content) return;
+  if (typeof showPOFImportPanel === 'function') {
+    showPOFImportPanel(content);
+  } else {
+    content.innerHTML = '<p style="font-size:12px;color:var(--text-muted)">POF import module not loaded. Ensure js/pof-import.js is included.</p>';
+  }
 }
 
 function toggleTeam(tid, teamName) {

@@ -1,0 +1,758 @@
+ LIC-FFE System — Web-Based Team Service Catalog Request Form
+
+## Plan for Claude Code
+
+---
+
+## 1. What This Is
+
+A **web-based order form** that replaces the current Excel file workflow. Instead of emailing an `.xlsx` to each team, you send them a URL. They open it, fill in quantities, and hit submit. The submitted data gets saved and can be imported into the LIC-FFE matrix.
+
+### How It Works
+1. You generate a **unique link per team** (e.g., `https://your-domain.com/order/WEC/2026/akkodis-asp-team`)
+2. The team opens the link — sees a branded form with the correct championship logo, their team name pre-filled, and the full service catalog
+3. They fill in quantities across the location grid (Kitchen, Offices 1–8, Pit) and heavy machinery details
+4. They hit **Submit** — data is saved to the backend
+5. On your side (LIC-FFE project), you pull submitted forms into the matrix
+
+### Two Parts to Build
+
+**Part 1: The Web Form** — a full-stack web app (React frontend + Node/Express or Python backend)
+**Part 2: The Import Bridge** — an endpoint or script in the LIC-FFE project that pulls submitted form data into the matrix `.xlsx`
+
+---
+
+## 2. URL Structure & Routing
+
+```
+/order/:championship/:year/:teamSlug
+```
+
+Examples:
+- `/order/wec/2026/akkodis-asp-team`
+- `/order/f1/2026/mclaren`
+- `/order/motogp/2026/ducati-lenovo`
+
+The URL determines:
+1. Which **logo** to show in the header
+2. Which **team name** is pre-filled (from the slug)
+3. Which **matrix** the data writes to on submit
+4. Which **cut-off date** to display and enforce
+
+### Admin Route (for you to generate & manage links)
+```
+/admin/forms
+```
+- List all generated forms and their submission status
+- Generate new form links (pick championship, year, team)
+- View/export submitted data
+- Mark forms as imported to matrix
+
+---
+
+## 3. Form Page Layout
+
+The form should visually replicate the Akkodis Excel file's `PADDOCK ORDER FORM` sheet — same structure, same order, same dark blue/mint branding — but as a responsive web page.
+
+### 3.1 Header Section
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  [CHAMPIONSHIP LOGO]                                     │
+│                                                          │
+│  LUSAIL INTERNATIONAL CIRCUIT                            │
+│  PADDOCK ORDER FORM [YEAR]                               │
+│                                                          │
+│  TEAM NAME: [Pre-filled, read-only]     [CHAMPIONSHIP]   │
+│                                                          │
+│  ORDER SUBMISSION CUT OFF DATE: [DATE]                   │
+│  DAYS LEFT: [Auto-calculated countdown]                  │
+│                                                          │
+│  ⚠ If past cut-off: "10% SURCHARGE APPLIES"             │
+└──────────────────────────────────────────────────────────┘
+```
+
+- Header background: `#052B5E`
+- Header text: `#BEFFF5`
+- Logo changes per championship (see Section 8)
+- Countdown calculates client-side from current date vs cut-off date
+
+### 3.2 Info Panel (Collapsible)
+
+A collapsible "Important Information" panel below the header showing the rules from the FLOW & INFO sheet:
+
+- ALL ITEMS ORDERED ARE NON-REFUNDABLE. PAYMENT TO BE RECEIVED PRIOR TO EVENT
+- ITEMS ORDERED AFTER THE CUT-OFF DATE WILL BE SUBJECT TO A 10% PRICE INCREASE
+- ANY ITEMS ORDERED AT THE VENUE WILL BE SUBJECT TO 20% PRICE INCREASE (EXCEPT DRINKS)
+- ONLY FILL IN THE GREEN CELLS
+- HEAVY MACHINERY & VEHICLES: COMPLETE ALL REQUIRED FIELDS (QUANTITY, MAST TYPE, DATE FROM AND TO)
+- ANY ITEMS LEFT AT LIC OR REQUIRING DISPOSAL WILL BE CALCULATED AND INVOICED POST-EVENT
+- PIT - TEAM VILLA - HEAVY EQUIPMENT KEYS AVAILABLE FROM TEAM SERVICES VILLA 007
+- THE TEAM VILLA MAXIMUM WEIGHT LIMIT IS 400 KG
+- FORKLIFTS ARE TO ONLY BE OPERATED BY QUALIFIED PERSONNEL
+- ALL FORK LIFTS WILL BE HANDED OVER WITH FULL FUEL TANKS
+
+### 3.3 Team Villa Section (Read-Only Display)
+
+A non-editable section showing what's already included in every villa. Grey background, no input fields.
+
+| Item | Qty | Notes |
+|------|-----|-------|
+| TV SCREENS | — | Kitchen: 2, Office 1: 2, Offices 2–8: 1 each, Pit: 2 |
+| OFFICE DESK (First Floor) | 7 | 1 per office (1–7) |
+| OFFICE CHAIRS (First Floor) | 7 | 1 per office |
+| UNDERDESK DRAWERS (First Floor) | 7 | 1 per office |
+| FIRE EXTINGUISHERS | 2 | Kitchen |
+| DRY CHEMICAL POWDER 9 KG | 1 | Pit |
+| DRY CHEMICAL POWDER 25 KG | 1 | Pit |
+| WALK IN FRIDGE | 1 | Kitchen |
+| SHELVES IN WALK IN | 6 | 6 × RACK SHELVING 20 x 30 |
+| UNDER COUNTER FRIDGES | 4 | — |
+| CONVECTION OVEN | 1 | — |
+| DEEP FAT FRYER | 1 | 20 x 90 |
+| WATER BOILER (PASTA) | 1 | — |
+| FLAT PLATE | 1 | — |
+| EXTRACTION HOOD | 1 | — |
+| INSECT ZAPPERS | 2 | — |
+| SALAMANDER | 1 | — |
+| DISH WASHER | 1 | — |
+| COOKING HOB | 1 x 4 ring | — |
+| PATIO FURNITURE | — | — |
+
+### 3.4 Orderable Catalog Sections (Location Grid)
+
+For sections 1–7 and 9, each section is a collapsible card with a dark blue header bar. Inside, a table with:
+
+**Column structure:**
+
+| Subcategory | Item | Description | KITCHEN | OFF 1 | OFF 2 | OFF 3 | OFF 4 | OFF 5 | OFF 6 | OFF 7 | OFF 8 | PIT | TOTAL | USD | QAR | LINE TOTAL |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+
+- **KITCHEN through PIT** = number input fields (green background `#C6EFCE`, min 0, integers only)
+- **TOTAL** = auto-sum of the 10 location inputs (computed client-side, real-time)
+- **USD** = QAR price / 3.64 (display only)
+- **QAR** = fixed price (display only)
+- **LINE TOTAL** = TOTAL × QAR price (computed client-side, real-time)
+
+Each section ends with a **subtotal row** summing all line totals in that section.
+
+On mobile: the location grid should become horizontally scrollable or switch to a stacked card layout per item.
+
+### 3.5 Heavy Machinery Section (Different Layout)
+
+This section does NOT use the location grid. Instead, each item has:
+
+| Item | QTY | MAST | START DATE | END DATE | DAYS | TRANSPORT | QAR/DAY | TOTAL |
+|---|---|---|---|---|---|---|---|---|
+
+- **QTY** = number input (green)
+- **MAST** = dropdown: HIGH / LOW (green) — only for forklifts, not extensions/buggies
+- **START DATE** = date picker (green)
+- **END DATE** = date picker (green)
+- **DAYS** = auto-computed: `end - start + 1` (or 0 if dates empty)
+- **TRANSPORT** = fixed QAR 2,080 (display only, per unit)
+- **QAR/DAY** = fixed rate (display only)
+- **TOTAL** = `QAR/DAY × DAYS × QTY + TRANSPORT × QTY`
+
+For **fork extensions** and **pallet trolley** (flat-rate items):
+- Only QTY input, no dates or mast
+- TOTAL = QAR price × QTY
+
+Date validation: if start > end, show inline error "START DATE MUST BE ON OR BEFORE END DATE"
+
+### 3.6 Additional Items Text Area
+
+Below all sections:
+```
+PLEASE LET US KNOW IF THERE IS AN ITEM YOU NEED THAT IS NOT LISTED
+ABOVE AND WE WILL DO OUR BEST TO ACCOMMODATE
+
+[Large text area for free-form requests]
+```
+
+### 3.7 Financial Summary Panel
+
+A sticky or bottom panel showing real-time totals:
+
+```
+KITCHEN EQUIPMENT AND ITEMS ............ QAR [subtotal]
+FURNITURE, FIXTURES & EQUIPMENT ........ QAR [subtotal]
+BEVERAGES .............................. QAR [subtotal]
+STATIONERY ............................. QAR [subtotal]
+AUDIO VISUAL & ELECTRICAL .............. QAR [subtotal]
+GASES - FUEL - CHEMICALS ............... QAR [subtotal]
+PIT EQUIPMENT .......................... QAR [subtotal]
+HEAVY MACHINERY AND VEHICLES ........... QAR [subtotal]
+MISCELLANEOUS .......................... QAR [subtotal]
+────────────────────────────────────────────────────────
+GRAND TOTAL ............................ QAR [total]
+                                        USD [total / 3.64]
+```
+
+If past cut-off date, show: `+ 10% LATE SURCHARGE: QAR [amount]` and adjusted grand total.
+
+### 3.8 Contact Details Section
+
+Below the financial summary:
+
+**Team Contact Details** (editable fields the team fills in):
+- Name, Email, Mobile, Office — for pre-event contact
+- Name, Email, Mobile, Office — for at-venue contact
+
+**LIC Contact Details** (read-only):
+- Primary: Wendel Malenab, wendel.malenab@circuitlosail.com, +974 5062 2068
+- Secondary: Yousef Abdelmoaty, yoseef.abdelmoaty@lcsc.qa, +974 3317 5732
+- Office: +974 444 59 555
+
+### 3.9 Submit Button
+
+Large submit button at the bottom. On click:
+1. Validate: team name exists, at least 1 item ordered, all forklift date ranges valid, contact details filled
+2. Show confirmation modal with the financial summary
+3. On confirm: POST data to backend
+4. Show success page with:
+   - "Your order has been submitted successfully"
+   - Order reference number
+   - Financial summary (printable)
+   - "Download PDF copy" option
+   - Bank details for payment:
+     ```
+     LOSAIL CIRCUIT SPORTS CLUB
+     BANK: QATAR NATIONAL BANK (Q.P.S.C)
+     ACCOUNT: 0013-046162-002
+     IBAN: QA71 QNBA 0000 0000 0013 0461 6200 2
+     SWIFT: QNBAQAQA
+     ```
+   - Payment reminders:
+     - "PAYMENT MUST BE MADE IN QATARI RIYALS - QAR"
+     - "ALL BANK HANDLING FEES MUST BE COVERED BY THE CLIENT"
+     - "100% PAYMENT MUST BE RECEIVED BEFORE ANY KEYS ARE HANDED OVER"
+
+---
+
+## 4. Full Service Catalog Data (Prices & Structure)
+
+**Exchange rate constant**: `1 USD = 3.64 QAR`
+
+### Section 1: KITCHEN EQUIPMENT AND ITEMS
+Subcategory: **KITCHEN ITEMS**
+
+| ID | Item | Description | QAR |
+|----|------|-------------|-----|
+| K01 | SINGLE DOOR REFRIGERATOR | 220 L WITH SMALL FREEZER | 390 |
+| K02 | 2 DOOR REFRIGERATOR | 220 L WITH SMALL FREEZER | 403 |
+| K03 | 2 DOOR REFRIGERATOR | 450 L WITH FREEZER ON TOP | 815 |
+| K04 | REFRIGERATED MERCHANDISER | DOUBLE-DOOR | 5850 |
+| K05 | CHEST FREEZER | 150-200 L (LIMITED NUMBERS) | 1127 |
+| K06 | WASHING UP LIQUID | 900 ml | 13 |
+| K07 | KITCHEN ANTI-SLIP MATS | 1500 mm x 900 mm | 123 |
+| K08 | KITCHEN ANTI-SLIP MATS | 900 mm x 700 mm | 120 |
+| K09 | DISHWASHER FLUID | 5 L | 113 |
+| K10 | RINSE AID | 400 ML | 39 |
+| K11 | ICE CUBES | 3 KG | 13 |
+| K12 | DISHWASHER SALT | 2 KG | 39 |
+
+### Section 2: FURNITURE, FIXTURES & EQUIPMENT
+
+Subcategory: **TABLES**
+
+| ID | Item | Description | QAR |
+|----|------|-------------|-----|
+| F01 | DESK | 320 cm L x 144 cm W 72cm H | 1014 |
+| F02 | DESK | 160cm (l) x 80cm (w) 74cm (h) | 798 |
+| F03 | FOLDABLE TABLE | 180 cm L x 80 cm W 72 cm H | 286 |
+| F04 | PATIO TABLE | — | 455 |
+| F05 | SERVER TABLE | 180 cm x 50 cm | 438 |
+| F06 | BISTRO TABLE | 795 mm | 377 |
+| F07 | COFFEE TABLE | 45 cm x 49 cm | 221 |
+
+Subcategory: **CHAIRS**
+
+| ID | Item | Description | QAR |
+|----|------|-------------|-----|
+| F08 | PLASTIC CHAIR | LIMITED NUMBERS | 104 |
+| F09 | UPHOLSTERED CHAIR | — | 139 |
+| F10 | OFFICE CHAIR ON WHEELS | — | 243 |
+| F11 | BAR STOOL | 111 cm H | 152 |
+| F12 | CHAIR | — | 136 |
+| F13 | VISITOR CHAIR | — | 148 |
+| F14 | PATIO CHAIR | — | 182 |
+
+Subcategory: **SOFA**
+
+| ID | Item | Description | QAR |
+|----|------|-------------|-----|
+| F15 | SOFA SET | 5 x SINGLE SOFAS IN GREY WITH SIDE TABLE | 3497 |
+| F16 | TWO SEATER SOFA | 155 cm W x 74 cm D 86 cm H | 1820 |
+
+Subcategory: **OTHER**
+
+| ID | Item | Description | QAR |
+|----|------|-------------|-----|
+| F17 | INTERNAL WALL | WHITE PARTITION WALL 2.44m H — PER RUNNING m | 438 |
+| F18 | INTERNAL DOOR | Lockable door, white. 2.44m high (per door) | 1105 |
+| F19 | WASTE BIN | 15 L | 78 |
+| F20 | OSCILLATING FAN | FREE STANDING | 377 |
+| F21 | WATER DISPENSER | FOR 20 L BOTTLES | 252 |
+| F22 | WHEELY BIN | 240 L | 234 |
+| F23 | GREY CARPET | PER M2 | 70 |
+
+### Section 3: BEVERAGES
+
+Subcategory: **WATER**
+
+| ID | Item | Description | QAR |
+|----|------|-------------|-----|
+| B01 | STILL WATER - GLASS BOTTLES | 500 ml x 16 | 120 |
+| B02 | STILL WATER - GLASS BOTTLES | 250 ml x 24 | 84 |
+| B03 | SPARKLING WATER - GLASS BOTTLES | 250 ml x 24 | 108 |
+| B04 | DISPENSER WATER | 20 L | 70 |
+
+Subcategory: **BEVERAGES**
+
+| ID | Item | Description | QAR |
+|----|------|-------------|-----|
+| B05 | COKE - CANS | 150 ml x 30 | 90 |
+| B06 | COKE LIGHT - CANS | 150 ml x 30 | 90 |
+| B07 | SPRITE - CANS | 150 ml x 30 | 90 |
+| B08 | FANTA - CANS | 150 ml x 30 | 90 |
+| B09 | GINGER ALE - CANS | 150 ml x 30 | 210 |
+| B10 | POCARI SWEAT - CANS | 330 ml x 24 | 236 |
+| B11 | RED BULL ORIGINAL | 250 ml x 24 | 350 |
+| B12 | ICE TEA LEMON - CANS | 210 ml x 24 | 100 |
+| B13 | ICE TEA PEACH - CANS | 210 ml x 24 | 100 |
+
+Subcategory: **OTHER**
+
+| ID | Item | Description | QAR |
+|----|------|-------------|-----|
+| B14 | PAPER CUPS | 200 ml x 50 | 5 |
+
+### Section 4: STATIONERY
+
+Subcategory: **PRINTING PAPER**
+
+| ID | Item | Description | QAR |
+|----|------|-------------|-----|
+| S01 | A4 | 1 REAM - 500 SHEETS | 18 |
+| S02 | A3 | 1 REAM - 500 SHEETS | 39 |
+
+### Section 5: AUDIO VISUAL & ELECTRICAL
+
+Subcategory: **TELEVISIONS**
+
+| ID | Item | Description | QAR |
+|----|------|-------------|-----|
+| A01 | LED SCREEN | 40" WITH STAND | 637 |
+| A02 | ELECTRICAL EXTENSION | 5 M | 100 |
+| A03 | TV STAND | ON WHEELS | 130 |
+
+### Section 6: GASES - FUEL - CHEMICALS
+
+Subcategory: **GASES**
+
+| ID | Item | Description | QAR |
+|----|------|-------------|-----|
+| G01 | NITROGEN | INDUSTRIAL GRADE 40 L 150 BAR 6 M3 | 278 |
+| G02 | NITROGEN | HIGH GRADE 99.998% 50 L - 200 BAR - 10 M3 | 369 |
+| G03 | SYNTHETIC AIR | ZERO GRADE - 50 L / 9M3 | 598 |
+| G04 | HYDROGEN | 40 L 200 BAR 9 M3 | 550 |
+| G05 | CARBON DIOXIDE | 99.9% 50 L | 278 |
+| G06 | ARGON | 50 L | 304 |
+
+Subcategory: **REGULATOR**
+
+| ID | Item | Description | QAR |
+|----|------|-------------|-----|
+| G07 | REGULATOR (PURCHASE ONLY) | TYPE R 504 1-7 BAR. BS3 OUTLET | 369 |
+| G08 | REGULATOR (PURCHASE ONLY) | TYPE R 504 1-7 BAR. BS4 OUTLET | 369 |
+
+### Section 7: PIT EQUIPMENT
+
+Subcategory: **FIRE EXTINGUISHERS**
+
+| ID | Item | Description | QAR |
+|----|------|-------------|-----|
+| P01 | CO2 | 5 KG | 415 |
+| P02 | DRY CHEMICAL POWDER | 9 KG | 210 |
+| P03 | AFFF | 9 LTR | 210 |
+| P04 | WATER | 9 LTR | 210 |
+
+Subcategory: **OTHER**
+
+| ID | Item | Description | QAR |
+|----|------|-------------|-----|
+| P05 | BRAKE CLEANER - CANS | 500 ML | 45 |
+| P06 | BRAKE CLEANER | 20 LTR | 1050 |
+| P07 | ACETONE | 20 L | 1050 |
+| P08 | DISTILLED WATER | 20 LTR | 50 |
+
+### Section 8: HEAVY MACHINERY AND VEHICLES
+
+**Different input structure — no location grid.**
+
+Subcategory: **FORKLIFTS** (rental items: qty + mast + dates + transport)
+
+| ID | Item | QAR/Day | Transport | Type |
+|----|------|---------|-----------|------|
+| H01 | 3 T FORKLIFT … CONTINUOUS RENTAL | 954 | 2080 | rental |
+| H02 | 3 T FORKLIFT … PRE-EVENT | 954 | 2080 | rental |
+| H03 | 3 T FORKLIFT … LIVE-EVENT | 954 | 2080 | rental |
+| H04 | 3 T FORKLIFT … POST-EVENT | 954 | 2080 | rental |
+| H05 | 3 T FORK EXTENSIONS 1.8 M | 84 | — | flat |
+| H06 | 3 T FORK EXTENSIONS 2.1 M | 84 | — | flat |
+| H07 | 3 T FORK EXTENSIONS 2.4 M | 87 | — | flat |
+| H08 | 5 T FORKLIFT … CONTINUOUS RENTAL | 1387 | 2080 | rental |
+| H09 | 5 T FORKLIFT … PRE-EVENT | 1387 | 2080 | rental |
+| H10 | 5 T FORKLIFT … LIVE EVENT | 1387 | 2080 | rental |
+| H11 | 5 T FORKLIFT … POST-EVENT | 1387 | 2080 | rental |
+| H12 | 5 T FORK EXTENSIONS 1.8 M | 161 | — | flat |
+| H13 | 5 T FORK EXTENSIONS 2.1 M | 161 | — | flat |
+| H14 | 5 T FORK EXTENSIONS 2.4 M | 161 | — | flat |
+| H15 | 7 T FORKLIFT … CONTINUOUS RENTAL | 1898 | 2080 | rental |
+| H16 | 7 T FORKLIFT … PRE-EVENT | 1898 | 2080 | rental |
+| H17 | 7 T FORKLIFT … LIVE-EVENT | 1898 | 2080 | rental |
+| H18 | 7 T FORKLIFT … POST-EVENT | 1898 | 2080 | rental |
+| H19 | 7 T FORK EXTENSIONS 1.8 M | 174 | — | flat |
+| H20 | 7 T FORK EXTENSIONS 2.1 M | 174 | — | flat |
+| H21 | 7 T FORK EXTENSIONS 2.4 M | 174 | — | flat |
+| H22 | 10 T FORKLIFT CONTINUOUS RENTAL | 2254 | 2080 | rental |
+| H23 | 10 T FORKLIFT PRE-EVENT | 2254 | 2080 | rental |
+| H24 | 10 T FORKLIFT LIVE EVENT | 2254 | 2080 | rental |
+| H25 | 10 T FORKLIFT POST-EVENT | 2254 | 2080 | rental |
+| H26 | 10 T FORK EXTENSIONS 1.8 M | 208 | — | flat |
+| H27 | 10 T FORK EXTENSIONS 2.1 M | 208 | — | flat |
+| H28 | 10 T FORK EXTENSIONS 2.4 M | 208 | — | flat |
+| H29 | PALLET TROLLEY 2 T | 1170 | — | flat |
+
+Subcategory: **GOLF BUGGY** (rental: qty + dates + transport, no mast)
+
+| ID | Item | QAR/Day | Transport | Type |
+|----|------|---------|-----------|------|
+| H30 | 4-SEATER ELECTRIC CLUB CAR | 455 | 2080 | rental |
+| H31 | 6-SEATER ELECTRIC CLUB CAR | 780 | 2080 | rental |
+
+**Rental formula**: `(QAR/Day × totalDays × qty) + (transport × qty)`
+**Flat formula**: `QAR × qty`
+
+### Section 9: MISCELLANEOUS
+
+| ID | Item | Description | QAR |
+|----|------|-------------|-----|
+| M01 | WINDOW FROSTING | PER M2 | 87 |
+
+---
+
+## 5. Data Model (Backend)
+
+### Submission Record
+
+```json
+{
+  "id": "uuid",
+  "championship": "WEC",
+  "year": 2026,
+  "teamName": "AKKODIS ASP TEAM",
+  "teamSlug": "akkodis-asp-team",
+  "submittedAt": "2026-01-15T14:30:00Z",
+  "isPastCutoff": false,
+  "surchargeApplied": 0,
+  "status": "submitted",        // submitted | imported | cancelled
+  
+  "contactDetails": {
+    "preEvent": { "name": "", "email": "", "mobile": "", "office": "" },
+    "atVenue": { "name": "", "email": "", "mobile": "", "office": "" }
+  },
+  
+  "catalogItems": [
+    {
+      "id": "K01",
+      "locations": {
+        "kitchen": 0, "office1": 0, "office2": 0, "office3": 0,
+        "office4": 0, "office5": 0, "office6": 0, "office7": 0,
+        "office8": 0, "pit": 0
+      },
+      "totalQty": 0,
+      "unitPriceQAR": 390,
+      "lineTotal": 0
+    }
+    // ... one entry per catalog item (K01–M01)
+  ],
+  
+  "heavyMachinery": [
+    {
+      "id": "H01",
+      "type": "rental",
+      "qty": 1,
+      "mast": "LOW",           // null for extensions/buggies
+      "startDate": "2026-03-18",
+      "endDate": "2026-03-29",
+      "totalDays": 12,
+      "unitPriceQAR": 954,
+      "transportQAR": 2080,
+      "lineTotal": 13528
+    }
+    // ... one entry per heavy item (H01–H31)
+  ],
+  
+  "additionalItemsRequest": "Free text from team",
+  
+  "subtotals": {
+    "kitchenEquipment": 0,
+    "furnitureFixtures": 0,
+    "beverages": 0,
+    "stationery": 0,
+    "audioVisual": 0,
+    "gasesChemicals": 0,
+    "pitEquipment": 0,
+    "heavyMachinery": 0,
+    "miscellaneous": 0
+  },
+  "grandTotalQAR": 0,
+  "grandTotalUSD": 0
+}
+```
+
+### Championship Config
+
+```json
+{
+  "WEC": {
+    "name": "FIA World Endurance Championship",
+    "shortName": "WEC",
+    "logo": "/assets/logos/wec.png",
+    "years": {
+      "2026": {
+        "cutoffDate": "2026-02-17",
+        "eventDates": { "start": "2026-03-18", "end": "2026-03-29" },
+        "teams": [
+          { "name": "ASTON MARTIN THOR TEAM", "slug": "aston-martin-thor-team" },
+          { "name": "TOYOTA GAZOO RACING", "slug": "toyota-gazoo-racing" },
+          { "name": "CADILLAC HERTZ TEAM JOTA", "slug": "cadillac-hertz-team-jota" },
+          { "name": "BMW M TEAM WRT", "slug": "bmw-m-team-wrt" },
+          { "name": "GENESIS MAGMA RACING", "slug": "genesis-magma-racing" },
+          { "name": "ALPINE ENDURANCE TEAM", "slug": "alpine-endurance-team" },
+          { "name": "FERRARI AF CORSE", "slug": "ferrari-af-corse" },
+          { "name": "AF CORSE", "slug": "af-corse" },
+          { "name": "PEUGEOT TOTALENERGIES", "slug": "peugeot-totalenergies" },
+          { "name": "GARAGE 59", "slug": "garage-59" },
+          { "name": "VISTA AF CORSE", "slug": "vista-af-corse" },
+          { "name": "HEART OF RACING TEAM", "slug": "heart-of-racing-team" },
+          { "name": "TEAM WRT", "slug": "team-wrt" },
+          { "name": "TF SPORT", "slug": "tf-sport" },
+          { "name": "RACING TEAM TURKEY BY TF", "slug": "racing-team-turkey-by-tf" },
+          { "name": "PROTON COMPETITION", "slug": "proton-competition" },
+          { "name": "AKKODIS ASP TEAM", "slug": "akkodis-asp-team" },
+          { "name": "IRON LYNX", "slug": "iron-lynx" },
+          { "name": "MANTHEY DK ENGINEERING", "slug": "manthey-dk-engineering" },
+          { "name": "THE BEND MANTHEY", "slug": "the-bend-manthey" }
+        ]
+      }
+    }
+  },
+  "F1": {
+    "name": "Formula 1",
+    "shortName": "F1",
+    "logo": "/assets/logos/f1.png",
+    "years": {}
+  },
+  "MOTOGP": {
+    "name": "MotoGP",
+    "shortName": "MOTOGP",
+    "logo": "/assets/logos/motogp.png",
+    "years": {}
+  },
+  "FORMULA_E": {
+    "name": "Formula E",
+    "shortName": "FORMULA E",
+    "logo": "/assets/logos/formula-e.png",
+    "years": {}
+  }
+}
+```
+
+---
+
+## 6. Tech Stack
+
+```
+Frontend:  React (or Next.js for SSR/routing)
+Styling:   CSS Modules or Tailwind — match the Excel aesthetic
+Backend:   Node.js + Express (or Next.js API routes)
+Database:  SQLite (simple) or PostgreSQL (production)
+           — or just JSON files on disk for MVP
+Export:    exceljs (npm) for generating .xlsx from submission data
+```
+
+### File Structure
+
+```
+/
+├── public/
+│   └── assets/
+│       └── logos/
+│           ├── wec.png
+│           ├── f1.png
+│           ├── motogp.png
+│           ├── formula-e.png
+│           └── lic-logo.png
+├── src/
+│   ├── app/                          # or pages/ for Next.js
+│   │   ├── order/
+│   │   │   └── [championship]/
+│   │   │       └── [year]/
+│   │   │           └── [teamSlug]/
+│   │   │               └── page.jsx  # The form page
+│   │   ├── admin/
+│   │   │   └── forms/
+│   │   │       └── page.jsx          # Admin dashboard
+│   │   └── success/
+│   │       └── page.jsx              # Post-submit confirmation
+│   ├── components/
+│   │   ├── FormHeader.jsx
+│   │   ├── InfoPanel.jsx
+│   │   ├── TeamVillaSection.jsx
+│   │   ├── CatalogSection.jsx        # Collapsible section wrapper
+│   │   ├── LocationGridTable.jsx     # The 10-column qty grid
+│   │   ├── LocationGridRow.jsx       # Single item row
+│   │   ├── HeavyMachinerySection.jsx
+│   │   ├── HeavyMachineryRow.jsx     # Rental row (dates + mast)
+│   │   ├── FlatRateRow.jsx           # Extension row (qty only)
+│   │   ├── FinancialSummary.jsx      # Sticky totals panel
+│   │   ├── ContactDetailsForm.jsx
+│   │   └── SubmitConfirmation.jsx    # Modal + success page
+│   ├── data/
+│   │   ├── service-catalog.js        # Full catalog from Section 4
+│   │   ├── championship-config.js    # Config from Section 5
+│   │   └── villa-included-items.js   # Read-only villa items
+│   ├── hooks/
+│   │   └── useFormCalculations.js    # Auto-sum, subtotals, grand total
+│   ├── api/
+│   │   ├── submit.js                 # POST endpoint — save submission
+│   │   ├── forms.js                  # GET — list submissions (admin)
+│   │   └── export.js                 # GET — export submission as .xlsx
+│   └── utils/
+│       ├── calculations.js           # Price math, surcharge logic
+│       └── matrix-importer.js        # Write submission → matrix .xlsx
+├── data/
+│   └── submissions/                  # Saved submission JSON files
+└── package.json
+```
+
+---
+
+## 7. Key Implementation Details
+
+### 7.1 Location Grid Component
+- 10 number inputs per row, all default to 0
+- Real-time auto-sum into TOTAL column
+- Real-time LINE TOTAL = TOTAL × QAR price
+- Section subtotal updates on every input change
+- Tab key should flow left-to-right across locations, then down to next item
+- Green background `#C6EFCE` on all input cells
+- Items with no qty ordered can be visually dimmed
+
+### 7.2 Heavy Machinery Component
+- Group forklifts by tonnage (3T, 5T, 7T, 10T) with visual separators
+- Each rental row: QTY input + MAST dropdown + START date + END date
+- Auto-compute DAYS and LINE TOTAL
+- Fork extension rows appear below their parent forklift group
+- Golf buggies at the bottom (no mast dropdown)
+- Validate: if QTY > 0, dates must be filled
+
+### 7.3 Surcharge Logic
+```javascript
+const isPastCutoff = new Date() > new Date(cutoffDate);
+const surchargeRate = isPastCutoff ? 0.10 : 0;
+const adjustedTotal = grandTotal * (1 + surchargeRate);
+```
+Show warning banner if past cut-off. The at-venue 20% surcharge is informational only (applied manually at the venue).
+
+### 7.4 Form State Management
+Use React `useReducer` or a form library (React Hook Form) to manage:
+- All 90+ catalog items × 10 locations = ~900 quantity fields
+- 31 heavy machinery items with mixed field types
+- Contact details
+- Performance matters — debounce recalculations or use `useMemo`
+
+### 7.5 Export to Matrix (Import Bridge)
+The admin side needs an "Import to Matrix" button per submission that:
+1. Reads the submission JSON
+2. Opens the corresponding matrix `.xlsx` (from the LIC-FFE project's data folder)
+3. Finds or creates the team's column
+4. Writes each item's totalQty to the matching row
+5. For heavy machinery, writes qty (and optionally dates/mast as a note)
+6. Saves the matrix
+7. Marks the submission as "imported"
+
+---
+
+## 8. Championship Logos
+
+| Championship | Logo Position | Header Label |
+|---|---|---|
+| WEC | Top-right of header | "WEC [YEAR]" |
+| F1 | Top-right of header | "F1 [YEAR]" |
+| MotoGP | Top-right of header | "MOTOGP [YEAR]" |
+| Formula E | Top-right of header | "FORMULA E [YEAR]" |
+| Other | Top-right of header | LIC default logo |
+
+Logo files need to be sourced/provided. Use placeholder SVGs during development.
+
+---
+
+## 9. Styling Specification
+
+Match the Akkodis Excel aesthetic in web form:
+
+| Element | Style |
+|---------|-------|
+| Page background | White |
+| Header bar | `background: #052B5E`, `color: #BEFFF5` |
+| Section headers | `background: #052B5E`, `color: #BEFFF5`, font 18px bold |
+| Subcategory labels | Dark text, bold, centered, light border |
+| Item names | Regular weight, centered |
+| Input cells | `background: #C6EFCE`, centered, border |
+| Price columns | Right-aligned, no background |
+| Subtotal rows | Bold, slight grey background, right-aligned total |
+| Grand total | Extra bold, larger font, dark blue text |
+| Font | `"Aptos Narrow", "Arial Narrow", Arial, sans-serif` |
+| Borders | Thin `#ccc` on grid cells, medium `#052B5E` on section boundaries |
+
+---
+
+## 10. Constants Summary
+
+| Constant | Value |
+|----------|-------|
+| Exchange Rate (USD/QAR) | 3.64 |
+| Transport Cost (per unit) | QAR 2,080 |
+| Late Order Surcharge | +10% after cut-off |
+| At-Venue Surcharge | +20% (except drinks) — informational |
+| Header Background | `#052B5E` |
+| Header Text | `#BEFFF5` |
+| Input Cell Background | `#C6EFCE` |
+| Font Stack | Aptos Narrow → Arial Narrow → Arial → sans-serif |
+| WEC 2026 Cut-off | 2026-02-17 |
+| WEC 2026 Event | 2026-03-18 to 2026-03-29 |
+
+---
+
+## 11. MVP vs Full Build
+
+### MVP (build first)
+- Single-page form with all sections
+- Form state in React, all calculations client-side
+- Submit saves JSON to disk (or SQLite)
+- Admin page lists submissions
+- Manual export to `.xlsx` via button
+
+### Full Build (add later)
+- Authentication for admin routes
+- Email notification on submission
+- Auto-import to matrix on submit
+- Edit/resubmit capability for teams
+- PDF download of financial summary
+- Image thumbnails next to catalog items (from ITEM IMAGES sheet)
+- Drag-to-reorder for villa floor plan
+- Multi-language support (English/Arabic)
