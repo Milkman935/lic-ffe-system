@@ -46,6 +46,29 @@ function debouncedSave() {
 document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
 window.addEventListener('beforeunload', () => { if (_saveTimer) clearTimeout(_saveTimer); save(); });
 setInterval(() => { if (S.champ && S.data && S._dirty) save(); }, 5000);
+
+// Auto-reload if POF admin (or another tab) writes to the current matrix key
+window.addEventListener('storage', e => {
+  if (!e.key || !e.newValue) return;
+  // If the updated key matches the currently loaded champ/year, reload in-place
+  if (S.champ && S.year && S.data && e.key === storageKey(S.champ, S.year)) {
+    try {
+      S.data = JSON.parse(e.newValue);
+      if (S.tab) renderTab(S.tab);
+      showToast('Matrix updated from POF import — Teams tab refreshed', 'success');
+    } catch(err) {}
+    return;
+  }
+  // If it looks like a different champ/year matrix key, let the user know
+  if (e.key && e.key.startsWith('lic_ffe_') && !e.key.startsWith('lic_ffe_theme') && !e.key.startsWith('lic_ffe_years')) {
+    const parts = e.key.replace('lic_ffe_', '').split('_');
+    if (parts.length >= 2) {
+      const impChamp = parts[0].toUpperCase();
+      const impYear  = parts[1];
+      showToast(`POF import applied to ${impChamp} ${impYear}. Navigate there to see it.`, 'info');
+    }
+  }
+});
 function loadData(champ, year) {
   const key = storageKey(champ, year);
   try {

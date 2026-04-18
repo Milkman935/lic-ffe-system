@@ -274,10 +274,11 @@ function importPOFSubmission(teamSlug, champKey, year) {
   // ── Save matrix ──
   save();
 
-  showToast(`Imported ${updated} qty entries${created ? ' · Created ' + created + ' new items' : ''} for ${teamName}`, 'success');
+  console.log(`[POF Import] done — teamKey="${teamKey}", updated=${updated}, created=${created}`);
+  showToast(`Imported ${updated} qty entr${updated===1?'y':'ies'}${created ? ' · ' + created + ' new item' + (created===1?'':'s') : ''} for ${teamName}`, 'success');
 
-  // Re-render teams tab if active
-  if (S.tab === 'teams') switchTab('teams');
+  // Always switch to teams tab so the result is immediately visible
+  switchTab('teams');
 }
 
 /* ── Catalog name resolvers (inline mini-catalog for the bridge) ── */
