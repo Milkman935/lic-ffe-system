@@ -7,14 +7,25 @@
 body:not(.light) #landing { background: #07070d; }
 body.light #landing { background: #eaecf1; }
 
-/* Diagonal speed-line texture */
+/* Diagonal speed-line texture + ambient glow */
 .landing-bg {
   position: absolute; inset: 0; pointer-events: none;
-  background: repeating-linear-gradient(
-    -55deg,
-    transparent 0px, transparent 72px,
-    rgba(128,128,128,0.018) 72px, rgba(128,128,128,0.018) 74px
-  );
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 90%, rgba(225,6,0,0.05) 0%, rgba(0,103,255,0.04) 40%, transparent 70%),
+    repeating-linear-gradient(
+      -55deg,
+      transparent 0px, transparent 72px,
+      rgba(128,128,128,0.018) 72px, rgba(128,128,128,0.018) 74px
+    );
+}
+body.light .landing-bg {
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 90%, rgba(225,6,0,0.04) 0%, rgba(0,103,255,0.03) 40%, transparent 70%),
+    repeating-linear-gradient(
+      -55deg,
+      transparent 0px, transparent 72px,
+      rgba(128,128,128,0.018) 72px, rgba(128,128,128,0.018) 74px
+    );
 }
 
 /* Tri-color racing stripe at very top */
@@ -29,6 +40,11 @@ body.light #landing { background: #eaecf1; }
   text-align: center; padding: 44px 24px 24px;
   z-index: 1; flex-shrink: 0;
 }
+/* Stagger header elements in */
+.lic-hero-logo { animation: fadeUp 500ms var(--ease-out) 0ms both; }
+.landing-title  { animation: fadeUp 500ms var(--ease-out) 80ms both; }
+.landing-subtitle { animation: fadeUp 500ms var(--ease-out) 140ms both; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } }
 .lic-hero-logo {
   height: 56px; width: auto; display: block;
   margin: 0 auto 24px;
@@ -66,10 +82,10 @@ body.light .lic-hero-logo {
   color: var(--text); margin-bottom: 10px;
 }
 .landing-title span {
-  display: inline-block;
-  background: linear-gradient(135deg, #e10600 0%, #ff6900 100%);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #00e6c8;
+}
+body.light .landing-title span {
+  color: #008c78;
 }
 .landing-subtitle {
   color: var(--text-muted); font-size: 13px;
@@ -92,7 +108,12 @@ body.light .lic-hero-logo {
   transition: flex 0.55s cubic-bezier(0.34, 1.1, 0.64, 1),
               box-shadow 0.35s, border-color 0.25s;
   min-width: 0;
+  animation: panelIn 500ms var(--ease-out) both;
 }
+.champ-panel:nth-child(1) { animation-delay: 200ms; }
+.champ-panel:nth-child(2) { animation-delay: 290ms; }
+.champ-panel:nth-child(3) { animation-delay: 370ms; }
+@keyframes panelIn { from { opacity: 0; transform: translateY(18px); } }
 .champ-panel:hover {
   flex: 2.6;
   border-color: var(--c);
@@ -102,28 +123,39 @@ body.light .champ-panel:hover {
   box-shadow: 0 12px 40px rgba(0,0,0,0.15), 0 0 0 1px var(--c);
 }
 
-/* Championship color vars */
+/* Championship color vars + per-panel color wash */
 .champ-panel.f1    { --c: #e10600; }
 .champ-panel.wec   { --c: #0067ff; }
 .champ-panel.motogp { --c: #ff6900; }
+
+body:not(.light) .champ-panel.f1    { background: linear-gradient(155deg, var(--surface) 50%, rgba(225,6,0,0.08)); }
+body:not(.light) .champ-panel.wec   { background: linear-gradient(155deg, var(--surface) 50%, rgba(0,103,255,0.08)); }
+body:not(.light) .champ-panel.motogp { background: linear-gradient(155deg, var(--surface) 50%, rgba(255,105,0,0.08)); }
+body.light .champ-panel.f1    { background: linear-gradient(155deg, #ffffff 50%, rgba(225,6,0,0.05)); }
+body.light .champ-panel.wec   { background: linear-gradient(155deg, #ffffff 50%, rgba(0,103,255,0.05)); }
+body.light .champ-panel.motogp { background: linear-gradient(155deg, #ffffff 50%, rgba(255,105,0,0.05)); }
 
 /* Top accent bar */
 .champ-panel::before {
   content: ''; position: absolute;
   top: 0; left: 0; right: 0; height: 4px;
   background: var(--c);
-  transition: height 0.3s;
+  transform: scaleY(1); transform-origin: top;
+  transition: transform 0.3s var(--ease-out);
 }
-.champ-panel:hover::before { height: 6px; }
+.champ-panel:hover::before { transform: scaleY(1.5); }
 
-/* Subtle color glow at bottom on hover */
+/* Color glow at bottom on hover */
 .champ-panel::after {
   content: ''; position: absolute;
-  bottom: 0; left: 0; right: 0; height: 120px;
-  background: linear-gradient(to top, rgba(0,0,0,0) 0%, transparent 100%);
+  bottom: 0; left: 0; right: 0; height: 160px;
+  background: transparent;
   transition: background 0.4s; pointer-events: none;
 }
 body:not(.light) .champ-panel:hover::after {
+  background: linear-gradient(to top, color-mix(in srgb, var(--c) 14%, transparent) 0%, transparent 100%);
+}
+body.light .champ-panel:hover::after {
   background: linear-gradient(to top, color-mix(in srgb, var(--c) 8%, transparent) 0%, transparent 100%);
 }
 
@@ -155,7 +187,7 @@ body:not(.light) .champ-panel:hover::after {
   max-width: 160px; width: 85%; height: 100%;
   object-fit: contain; object-position: center;
   filter: drop-shadow(0 0 6px var(--logo-glow)) drop-shadow(0 0 18px var(--logo-glow-wide));
-  transition: transform 0.4s, filter 0.4s;
+  transition: transform 400ms var(--ease-out), filter 400ms ease;
 }
 .champ-panel.f1    { --logo-glow: rgba(225,6,0,0.5);    --logo-glow-wide: rgba(225,6,0,0.2); }
 .champ-panel.wec   { --logo-glow: rgba(0,103,255,0.5);  --logo-glow-wide: rgba(0,103,255,0.2); }
@@ -207,10 +239,11 @@ body:not(.light) .champ-panel:hover::after {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 50%; width: 42px; height: 42px;
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: all 0.2s; box-shadow: var(--shadow);
+  cursor: pointer; transition: transform 150ms var(--ease-out), border-color 150ms ease; box-shadow: var(--shadow);
   color: var(--text);
 }
-.landing-theme-btn:hover { transform: scale(1.1); border-color: var(--text-muted); }
+@media (hover: hover) and (pointer: fine) { .landing-theme-btn:hover { transform: scale(1.1); border-color: var(--text-muted); } }
+.landing-theme-btn:active { transform: scale(0.93); }
 
 /* ── YEAR PICKER overlay ── */
 #year-picker {
@@ -225,10 +258,10 @@ body.light #year-picker { background: rgba(180,190,210,0.6); }
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 20px; padding: 40px; text-align: center;
   min-width: 360px; box-shadow: var(--shadow);
-  animation: yearModalIn 0.25s ease;
+  animation: yearModalIn 220ms var(--ease-out) both;
 }
 @keyframes yearModalIn {
-  from { opacity:0; transform:scale(0.95) translateY(8px) }
+  from { opacity:0; transform:scale(0.95) translateY(10px) }
   to   { opacity:1; transform:scale(1) translateY(0) }
 }
 .year-modal-title { font-size: 22px; font-weight: 800; margin-bottom: 6px; color: var(--text); }
@@ -238,20 +271,24 @@ body.light #year-picker { background: rgba(180,190,210,0.6); }
   padding: 18px; border: 1px solid var(--border);
   border-radius: 12px; background: var(--surface2);
   color: var(--text); font-size: 18px; font-weight: 700;
-  cursor: pointer; transition: all 0.2s;
+  cursor: pointer; transition: border-color 150ms var(--ease-out), color 150ms var(--ease-out), transform 150ms var(--ease-out);
 }
-.year-btn:hover { border-color: var(--champ-color); color: var(--champ-color); transform: scale(1.04); }
+@media (hover: hover) and (pointer: fine) { .year-btn:hover { border-color: var(--champ-color); color: var(--champ-color); transform: scale(1.04); } }
+.year-btn:active { transform: scale(0.97); }
 .year-add-btn {
   width: 100%; padding: 12px; border: 1px dashed var(--border);
   border-radius: 10px; background: none; color: var(--text-muted);
-  font-size: 14px; cursor: pointer; transition: all 0.2s; margin-top: 4px;
+  font-size: 14px; cursor: pointer; transition: border-color 150ms var(--ease-out), color 150ms var(--ease-out), transform 150ms var(--ease-out); margin-top: 4px;
 }
-.year-add-btn:hover { border-color: var(--champ-color); color: var(--champ-color); }
+@media (hover: hover) and (pointer: fine) { .year-add-btn:hover { border-color: var(--champ-color); color: var(--champ-color); } }
+.year-add-btn:active { transform: scale(0.98); }
 .year-cancel {
   margin-top: 12px; background: none; border: none;
   color: var(--text-muted); font-size: 13px; cursor: pointer; padding: 6px;
+  transition: color 150ms var(--ease-out), transform 150ms var(--ease-out);
 }
-.year-cancel:hover { color: var(--text); }
+@media (hover: hover) and (pointer: fine) { .year-cancel:hover { color: var(--text); } }
+.year-cancel:active { transform: scale(0.95); }
 
 /* ── Mobile ── */
 @media (max-width: 700px) {

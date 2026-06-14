@@ -1,7 +1,12 @@
 /* ANALYTICS */
 .analytics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px}
 .analytics-grid .wide{grid-column:1/-1}
-.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:transform 200ms var(--ease-out),box-shadow 200ms var(--ease-out),border-color 200ms ease;animation:cardIn 350ms var(--ease-out) both}
+.chart-card:nth-child(1){animation-delay:0ms}
+.chart-card:nth-child(2){animation-delay:60ms}
+.chart-card:nth-child(3){animation-delay:120ms}
+.chart-card:nth-child(4){animation-delay:180ms}
+@media (hover: hover) and (pointer: fine){.chart-card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,0.22);border-color:color-mix(in srgb,var(--champ-color) 25%,var(--border))}}
 .chart-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px}
 .chart-subtitle{font-size:12px;color:var(--text-muted);margin-bottom:18px}
 .chart-wrap{position:relative;height:250px}
@@ -19,22 +24,27 @@
 .top-list li:last-child{border-bottom:none}
 .top-list-rank{font-size:11px;font-weight:700;color:var(--text-muted);width:18px;text-align:center}
 .top-list-bar-wrap{flex:1;height:6px;background:var(--surface3);border-radius:3px;overflow:hidden}
-.top-list-bar{height:100%;border-radius:3px;transition:width 0.4s}
+.top-list-bar{height:100%;border-radius:3px;transition:width 400ms var(--ease-in-out)}
 .top-list-val{font-size:12px;font-weight:700;color:var(--text);min-width:32px;text-align:right}
 
 /* PROGRESS */
 .progress-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
-.progress-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;gap:14px}
+.progress-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;gap:14px;transition:transform 200ms var(--ease-out),box-shadow 200ms var(--ease-out);animation:cardIn 350ms var(--ease-out) both}
+.progress-card:nth-child(1){animation-delay:0ms}
+.progress-card:nth-child(2){animation-delay:55ms}
+.progress-card:nth-child(3){animation-delay:110ms}
+.progress-card:nth-child(4){animation-delay:165ms}
+@media (hover: hover) and (pointer: fine){.progress-card:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,0.2)}}
 .progress-card-header{display:flex;align-items:center;justify-content:space-between}
 .progress-card-name{font-size:14px;font-weight:700;color:var(--text)}
 .progress-pct{font-size:22px;font-weight:800}
 .progress-bar{height:7px;background:var(--surface3);border-radius:4px;overflow:hidden}
-.progress-bar-fill{height:100%;border-radius:4px;transition:width 0.5s}
+.progress-bar-fill{height:100%;border-radius:4px;transition:width 500ms var(--ease-in-out)}
 .progress-locs{display:flex;flex-direction:column;gap:7px}
 .progress-loc{display:flex;flex-direction:column;gap:3px}
 .progress-loc-header{display:flex;justify-content:space-between;font-size:12px}
 .progress-loc-name{color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
 .progress-loc-pct{color:var(--text);font-weight:600;flex-shrink:0}
 .progress-bar-sm{height:4px;background:var(--surface3);border-radius:3px;overflow:hidden}
-.progress-bar-sm-fill{height:100%;border-radius:3px;transition:width 0.4s}
+.progress-bar-sm-fill{height:100%;border-radius:3px;transition:width 400ms var(--ease-in-out)}
 

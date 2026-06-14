@@ -5,6 +5,9 @@
   --radius:12px; --shadow:0 4px 24px rgba(0,0,0,0.4); --champ-color:#e10600;
   --input-bg:#1c1c28;
   --f1-color:#e10600; --wec-color:#0067ff; --motogp-color:#ff6900;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 body.light {
   --bg:#f0f2f5; --surface:#ffffff; --surface2:#f5f7fa; --surface3:#eaecef;
