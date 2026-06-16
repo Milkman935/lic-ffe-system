@@ -12,3 +12,6 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
   }
 }
 
+/* Keyboard focus ring — visible only for keyboard navigation, adapts to championship color */
+:focus-visible{outline:2px solid var(--champ-color);outline-offset:2px}
+

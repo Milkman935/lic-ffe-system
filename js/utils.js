@@ -59,6 +59,8 @@ function categorize(n) {
   if (/table|desk|bench/.test(n)) return 'TABLES';
   return 'OTHERS';
 }
+// Canonical category display order — matches categorize()'s rule order
+const CATEGORY_ORDER = ['KITCHEN ITEMS','TABLES','SOFA','CHAIRS','BEVERAGES','PRINTING PAPER','AUDIO VISUAL & ELECTRICAL','GASES - FUEL - CHEMICALS','HEAVY MACHINERY AND VEHICLES','OTHERS'];
 
 // ── COMPUTED ITEM FIELDS (single source of truth) ──
 function itemTotal(item) {

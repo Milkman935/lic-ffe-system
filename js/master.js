@@ -52,15 +52,15 @@ function renderMaster(container) {
       <table class="inv-table">
         <thead>
           <tr>
-            <th onclick="sortInv('name')">Item ↕</th>
+            <th class="sortable" data-field="name" onclick="sortInv('name')">Item</th>
             <th>Category</th>
-            <th onclick="sortInv('depts')" title="Total from Departments">Depts ↕</th>
-            <th onclick="sortInv('teamtotal')" title="Total from Teams">Teams ↕</th>
-            <th onclick="sortInv('total')" title="Combined Total (Depts + Teams)">Total ↕</th>
+            <th class="sortable" data-field="depts" onclick="sortInv('depts')" title="Total from Departments">Depts</th>
+            <th class="sortable" data-field="teamtotal" onclick="sortInv('teamtotal')" title="Total from Teams">Teams</th>
+            <th class="sortable" data-field="total" onclick="sortInv('total')" title="Combined Total (Depts + Teams)">Total</th>
             <th>LIC Inv.</th>
             <th>MOYS/LIC</th>
             <th>Aspire</th>
-            <th onclick="sortInv('deficit')">Deficit ↕</th>
+            <th class="sortable" data-field="deficit" onclick="sortInv('deficit')">Deficit</th>
             <th>Departments</th>
             <th style="min-width:140px">Notes</th>
             <th style="width:36px"></th>
@@ -68,37 +68,58 @@ function renderMaster(container) {
         </thead>
         <tbody id="inv-tbody">`;
 
-  its.forEach(item => {
-    const cat = item.category || categorize(item.name);
-    const tot = itemTotal(item);
-    const avail = itemAvail(item);
-    const deficit = itemDeficit(item);
-    const surplus = avail - tot;
-    const dc = deficit > 20 ? 'bad' : deficit > 0 ? 'warn' : 'ok';
-    const dLabel = deficit > 0 ? `−${deficit}` : surplus > 0 ? `+${surplus} surplus` : '✓ 0';
-    const activeDepts = Object.keys(item.dept_quantities||{}).filter(d => {
-      const dq = item.dept_quantities[d];
-      return dq && Object.values(dq).some(q=>(parseInt(q, 10)||0)>0);
+  // Default arrangement: grouped by canonical category (regardless of custom category labels), then alphabetically
+  let sortedItems = its;
+  try {
+    sortedItems = [...its].sort((a,b) => {
+      const oa = CATEGORY_ORDER.indexOf(categorize(a.name||'')), ob = CATEGORY_ORDER.indexOf(categorize(b.name||''));
+      if (oa !== ob) return oa - ob;
+      return String(a.name||'').localeCompare(String(b.name||''));
     });
-    // Dept total and team total separately
-    let deptsTotal = 0, teamsTotal = 0;
-    Object.values(item.dept_quantities||{}).forEach(dq => Object.values(dq).forEach(q => deptsTotal += (parseInt(q, 10)||0)));
-    Object.values(item.team_quantities||{}).forEach(tq => Object.values(tq).forEach(q => teamsTotal += (parseInt(q, 10)||0)));
-    html += `
-      <tr data-item-id="${item.id}" data-name="${esc(item.name.toLowerCase())}" data-cat="${esc(cat)}" data-deficit="${deficit}" data-total="${tot}" data-depts="${deptsTotal}" data-teamtotal="${teamsTotal}">
-        <td style="max-width:220px"><input class="notes-input" style="font-weight:600;width:100%" value="${esc(item.name)}" onblur="updateItemName('${item.id}',this.value)" title="Click to edit name"></td>
-        <td><span class="cat-badge">${esc(cat)}</span></td>
-        <td style="font-weight:600;color:var(--text-muted)">${deptsTotal||0}</td>
-        <td style="font-weight:600;color:var(--accent)">${teamsTotal||0}</td>
-        <td style="font-weight:700" class="total-cell-${item.id}">${tot}</td>
-        <td><input class="inv-edit-input" type="number" min="0" value="${item.lic_inventory||0}" oninput="updateInv('${item.id}','lic_inventory',this.value)"></td>
-        <td><input class="inv-edit-input" type="number" min="0" value="${item.moys_lic||0}" oninput="updateInv('${item.id}','moys_lic',this.value)"></td>
-        <td><input class="inv-edit-input" type="number" min="0" value="${item.aspire||0}" oninput="updateInv('${item.id}','aspire',this.value)"></td>
-        <td><span class="deficit-pill ${dc}">${dLabel}</span></td>
-        <td style="font-size:11px;max-width:180px;cursor:pointer" onclick="showDeptPopover(event,'${item.id}')" title="Click to see all departments">${activeDepts.slice(0,3).map(d=>`<span style="display:inline-block;background:var(--surface3);padding:1px 5px;border-radius:3px;margin:1px;white-space:nowrap">${esc(d.substring(0,14))}</span>`).join('')}${activeDepts.length>3?`<span style="color:var(--accent);font-weight:600"> +${activeDepts.length-3} more ▾</span>`:''}</td>
-        <td><input class="notes-input" type="text" value="${esc(item.notes||'')}" placeholder="Add note…" onblur="updateNote('${item.id}',this.value)"></td>
-        <td><button class="del-row-btn" onclick="deleteItem('${item.id}')" title="Remove item">${icon('trash',13)}</button></td>
-      </tr>`;
+  } catch (e) {
+    console.error('Master view category sort failed, showing unsorted', e);
+    sortedItems = its;
+  }
+  let prevGroup = null;
+  sortedItems.forEach(item => {
+    try {
+      const name = String(item.name||'');
+      const cat = item.category || categorize(name);
+      const group = categorize(name);
+      const tot = itemTotal(item);
+      const avail = itemAvail(item);
+      const deficit = itemDeficit(item);
+      const surplus = avail - tot;
+      const dc = deficit > 20 ? 'bad' : deficit > 0 ? 'warn' : 'ok';
+      const dLabel = deficit > 0 ? `−${deficit}` : surplus > 0 ? `+${surplus} surplus` : '✓ 0';
+      const activeDepts = Object.keys(item.dept_quantities||{}).filter(d => {
+        const dq = item.dept_quantities[d];
+        return dq && Object.values(dq).some(q=>(parseInt(q, 10)||0)>0);
+      });
+      // Dept total and team total separately
+      let deptsTotal = 0, teamsTotal = 0;
+      Object.values(item.dept_quantities||{}).forEach(dq => Object.values(dq).forEach(q => deptsTotal += (parseInt(q, 10)||0)));
+      Object.values(item.team_quantities||{}).forEach(tq => Object.values(tq).forEach(q => teamsTotal += (parseInt(q, 10)||0)));
+      const groupStart = prevGroup !== null && prevGroup !== group;
+      prevGroup = group;
+      html += `
+        <tr data-item-id="${item.id}" data-name="${esc(name.toLowerCase())}" data-cat="${esc(cat)}" data-deficit="${deficit}" data-total="${tot}" data-depts="${deptsTotal}" data-teamtotal="${teamsTotal}" class="${groupStart?'cat-group-start':''}">
+          <td style="max-width:220px"><input class="notes-input" style="font-weight:600;width:100%" value="${esc(name)}" onblur="updateItemName('${item.id}',this.value)" title="Click to edit name"></td>
+          <td><span class="cat-badge">${esc(cat)}</span></td>
+          <td style="font-weight:600;color:var(--text-muted)">${deptsTotal||0}</td>
+          <td style="font-weight:600;color:var(--accent)">${teamsTotal||0}</td>
+          <td style="font-weight:700" class="total-cell-${item.id}">${tot}</td>
+          <td><input class="inv-edit-input" type="number" min="0" value="${item.lic_inventory||0}" oninput="updateInv('${item.id}','lic_inventory',this.value)"></td>
+          <td><input class="inv-edit-input" type="number" min="0" value="${item.moys_lic||0}" oninput="updateInv('${item.id}','moys_lic',this.value)"></td>
+          <td><input class="inv-edit-input" type="number" min="0" value="${item.aspire||0}" oninput="updateInv('${item.id}','aspire',this.value)"></td>
+          <td><span class="deficit-pill ${dc}">${dLabel}</span></td>
+          <td style="font-size:11px;max-width:180px;cursor:pointer" onclick="showDeptPopover(event,'${item.id}')" title="Click to see all departments">${activeDepts.slice(0,3).map(d=>`<span style="display:inline-block;background:var(--surface3);padding:1px 5px;border-radius:3px;margin:1px;white-space:nowrap">${esc(d.substring(0,14))}</span>`).join('')}${activeDepts.length>3?`<span style="color:var(--accent);font-weight:600"> +${activeDepts.length-3} more ▾</span>`:''}</td>
+          <td><input class="notes-input" type="text" value="${esc(item.notes||'')}" placeholder="Add note…" onblur="updateNote('${item.id}',this.value)"></td>
+          <td><button class="del-row-btn" onclick="deleteItem('${item.id}')" title="Remove item">${icon('trash',13)}</button></td>
+        </tr>`;
+    } catch (e) {
+      console.error('Master view: skipping item due to render error', item, e);
+    }
   });
 
   if (!its.length) {
@@ -129,16 +150,32 @@ function filterInv(q) {
     if (countEl) countEl.textContent = (visible < total) ? `${visible} of ${total} items` : `${total} items`;
   }, 120);
 }
+let _invSort = { field: null, dir: 'desc' };
 function sortInv(field) {
   const tbody = document.getElementById('inv-tbody');
   if (!tbody) return;
+  if (_invSort.field === field) {
+    _invSort.dir = _invSort.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    _invSort = { field, dir: field === 'name' ? 'asc' : 'desc' };
+  }
+  const { dir } = _invSort;
   const rows = [...tbody.querySelectorAll('tr')];
   rows.sort((a,b) => {
-    if (field === 'name') return (a.dataset.name||'').localeCompare(b.dataset.name||'');
-    const key = field === 'deficit' ? 'deficit' : field === 'depts' ? 'depts' : field === 'teamtotal' ? 'teamtotal' : 'total';
-    return parseInt(b.dataset[key]||'0', 10) - parseInt(a.dataset[key]||'0', 10);
+    let cmp;
+    if (field === 'name') cmp = (a.dataset.name||'').localeCompare(b.dataset.name||'');
+    else {
+      const key = field === 'deficit' ? 'deficit' : field === 'depts' ? 'depts' : field === 'teamtotal' ? 'teamtotal' : 'total';
+      cmp = (parseInt(a.dataset[key]||'0', 10)) - (parseInt(b.dataset[key]||'0', 10));
+    }
+    return dir === 'asc' ? cmp : -cmp;
   });
-  rows.forEach(r => tbody.appendChild(r));
+  rows.forEach(r => { r.classList.remove('cat-group-start'); tbody.appendChild(r); });
+  document.querySelectorAll('.inv-table th.sortable').forEach(th => {
+    th.classList.toggle('sort-active', th.dataset.field === field);
+    th.classList.toggle('sort-asc', th.dataset.field === field && dir === 'asc');
+    th.classList.toggle('sort-desc', th.dataset.field === field && dir === 'desc');
+  });
 }
 function recalcTotalNeeded(item) {
   item.total_needed = itemTotal(item);

@@ -11,6 +11,7 @@ body.light #landing { background: #eaecf1; }
 .landing-bg {
   position: absolute; inset: 0; pointer-events: none;
   background:
+    radial-gradient(ellipse 60% 45% at 88% 6%, rgba(255,105,0,0.05) 0%, transparent 65%),
     radial-gradient(ellipse 80% 55% at 50% 90%, rgba(225,6,0,0.05) 0%, rgba(0,103,255,0.04) 40%, transparent 70%),
     repeating-linear-gradient(
       -55deg,
@@ -20,6 +21,7 @@ body.light #landing { background: #eaecf1; }
 }
 body.light .landing-bg {
   background:
+    radial-gradient(ellipse 60% 45% at 88% 6%, rgba(255,105,0,0.04) 0%, transparent 65%),
     radial-gradient(ellipse 80% 55% at 50% 90%, rgba(225,6,0,0.04) 0%, rgba(0,103,255,0.03) 40%, transparent 70%),
     repeating-linear-gradient(
       -55deg,
@@ -30,72 +32,64 @@ body.light .landing-bg {
 
 /* Tri-color racing stripe at very top */
 .landing-stripe {
-  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  position: absolute; top: 0; left: 0; right: 0; height: 5px;
   background: linear-gradient(90deg, #0067ff 0%, #e10600 50%, #ff6900 100%);
-  z-index: 2;
+  z-index: 2; overflow: hidden;
 }
+.landing-stripe::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+  transform: translateX(-100%);
+  animation: stripeShimmer 1.3s var(--ease-out) 450ms 1 both;
+}
+@keyframes stripeShimmer { to { transform: translateX(100%); } }
 
-/* ── Header ── */
+/* ── Header — compact top-left nav bar ── */
 .landing-header {
-  text-align: center; padding: 44px 24px 24px;
-  z-index: 1; flex-shrink: 0;
+  position: absolute; top: 0; left: 0; right: 0;
+  display: flex; align-items: center; gap: 14px;
+  padding: 20px 28px; z-index: 1;
 }
 /* Stagger header elements in */
-.lic-hero-logo { animation: fadeUp 500ms var(--ease-out) 0ms both; }
-.landing-title  { animation: fadeUp 500ms var(--ease-out) 80ms both; }
-.landing-subtitle { animation: fadeUp 500ms var(--ease-out) 140ms both; }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } }
+.lic-hero-logo    { animation: fadeUp 400ms var(--ease-out) 0ms both; }
+.landing-title    { animation: fadeUp 400ms var(--ease-out) 60ms both; }
+.landing-subtitle { animation: fadeUp 400ms var(--ease-out) 110ms both; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } }
 .lic-hero-logo {
-  height: 56px; width: auto; display: block;
-  margin: 0 auto 24px;
-  filter: brightness(1) drop-shadow(0 0 8px rgba(0,230,200,0.55)) drop-shadow(0 0 24px rgba(0,210,185,0.3));
+  height: 34px; width: auto; display: block; flex-shrink: 0;
+  filter: brightness(1) drop-shadow(0 0 6px rgba(0,230,200,0.5)) drop-shadow(0 0 18px rgba(0,210,185,0.25));
   animation: logoGlow 3s ease-in-out infinite;
 }
 body.light .lic-hero-logo {
-  filter: brightness(0.5) saturate(1.3) drop-shadow(0 0 10px rgba(0,160,140,0.7)) drop-shadow(0 0 26px rgba(0,140,120,0.45));
+  filter: brightness(0.5) saturate(1.3) drop-shadow(0 0 8px rgba(0,160,140,0.65)) drop-shadow(0 0 20px rgba(0,140,120,0.4));
 }
 @keyframes logoGlow {
-  0%,100% { filter: brightness(1) drop-shadow(0 0 8px rgba(0,230,200,0.55)) drop-shadow(0 0 24px rgba(0,210,185,0.3)); }
-  50%      { filter: brightness(1.08) drop-shadow(0 0 14px rgba(0,240,210,0.8)) drop-shadow(0 0 40px rgba(0,220,195,0.45)); }
+  0%,100% { filter: brightness(1) drop-shadow(0 0 6px rgba(0,230,200,0.5)) drop-shadow(0 0 18px rgba(0,210,185,0.25)); }
+  50%      { filter: brightness(1.08) drop-shadow(0 0 10px rgba(0,240,210,0.75)) drop-shadow(0 0 28px rgba(0,220,195,0.4)); }
 }
-.lic-badge {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: rgba(128,128,128,0.1);
-  border: 1px solid rgba(128,128,128,0.2);
-  padding: 6px 18px; border-radius: 50px; margin-bottom: 20px;
-  font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase;
-  color: var(--text-muted);
-}
-.lic-badge::before {
-  content: ''; width: 6px; height: 6px;
-  background: var(--success); border-radius: 50%;
-  animation: pulse 2s infinite;
-}
-@keyframes pulse {
-  0%,100% { opacity:1; transform:scale(1) }
-  50% { opacity:.4; transform:scale(1.5) }
+/* Thin divider between logo and title */
+.landing-header::before {
+  content: ''; width: 1px; height: 22px; flex-shrink: 0;
+  background: var(--border); margin: 0 2px;
 }
 .landing-title {
-  font-size: clamp(28px, 4.5vw, 52px); font-weight: 900;
-  letter-spacing: -2px; line-height: 1.15;
-  padding-bottom: 4px;
-  color: var(--text); margin-bottom: 10px;
+  font-size: 14px; font-weight: 600;
+  letter-spacing: 0.01em; line-height: 1;
+  color: var(--text); margin: 0;
 }
-.landing-title span {
-  color: #00e6c8;
-}
-body.light .landing-title span {
-  color: #008c78;
-}
+.landing-title span { color: #00e6c8; }
+body.light .landing-title span { color: #008c78; }
 .landing-subtitle {
-  color: var(--text-muted); font-size: 13px;
-  letter-spacing: 1px; margin-top: 6px;
+  color: var(--text-muted); font-size: 11px;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  margin-left: 4px; margin-top: 0;
+  opacity: 0.7;
 }
 
 /* ── Expandable championship panels ── */
 .champ-panels {
   display: flex; flex: 1; width: 100%;
-  max-width: 1160px; padding: 8px 24px 40px;
+  max-width: 1160px; padding: 80px 24px 40px;
   gap: 14px; z-index: 1;
 }
 
@@ -103,10 +97,11 @@ body.light .landing-title span {
   flex: 1; position: relative; cursor: pointer;
   border-radius: 20px; overflow: hidden;
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: linear-gradient(155deg, var(--surface) 60%, color-mix(in srgb, var(--c) 9%, transparent));
   display: flex; align-items: center; justify-content: center;
   transition: flex 0.55s cubic-bezier(0.34, 1.1, 0.64, 1),
-              box-shadow 0.35s, border-color 0.25s;
+              transform 0.35s var(--ease-out), box-shadow 0.35s var(--ease-out),
+              border-color 0.25s ease, background 0.35s ease;
   min-width: 0;
   animation: panelIn 500ms var(--ease-out) both;
 }
@@ -114,36 +109,36 @@ body.light .landing-title span {
 .champ-panel:nth-child(2) { animation-delay: 290ms; }
 .champ-panel:nth-child(3) { animation-delay: 370ms; }
 @keyframes panelIn { from { opacity: 0; transform: translateY(18px); } }
-.champ-panel:hover {
-  flex: 2.6;
-  border-color: var(--c);
-  box-shadow: 0 16px 60px rgba(0,0,0,0.4), 0 0 0 1px var(--c);
+@media (hover: hover) and (pointer: fine) {
+  .champ-panel:hover {
+    flex: 2.4;
+    transform: translateY(-8px);
+    border-color: var(--c);
+    background: linear-gradient(155deg, var(--surface) 38%, color-mix(in srgb, var(--c) 30%, transparent));
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px var(--c);
+  }
+  body.light .champ-panel:hover {
+    box-shadow: 0 16px 44px rgba(0,0,0,0.16), 0 0 0 1px var(--c);
+  }
 }
-body.light .champ-panel:hover {
-  box-shadow: 0 12px 40px rgba(0,0,0,0.15), 0 0 0 1px var(--c);
-}
+.champ-panel:active { transform: translateY(-2px) scale(0.99); }
 
-/* Championship color vars + per-panel color wash */
+/* Championship color vars */
 .champ-panel.f1    { --c: #e10600; }
 .champ-panel.wec   { --c: #0067ff; }
 .champ-panel.motogp { --c: #ff6900; }
 
-body:not(.light) .champ-panel.f1    { background: linear-gradient(155deg, var(--surface) 50%, rgba(225,6,0,0.08)); }
-body:not(.light) .champ-panel.wec   { background: linear-gradient(155deg, var(--surface) 50%, rgba(0,103,255,0.08)); }
-body:not(.light) .champ-panel.motogp { background: linear-gradient(155deg, var(--surface) 50%, rgba(255,105,0,0.08)); }
-body.light .champ-panel.f1    { background: linear-gradient(155deg, #ffffff 50%, rgba(225,6,0,0.05)); }
-body.light .champ-panel.wec   { background: linear-gradient(155deg, #ffffff 50%, rgba(0,103,255,0.05)); }
-body.light .champ-panel.motogp { background: linear-gradient(155deg, #ffffff 50%, rgba(255,105,0,0.05)); }
-
-/* Top accent bar */
+/* Top accent bar — thick primary stripe + thin secondary stripe */
 .champ-panel::before {
   content: ''; position: absolute;
-  top: 0; left: 0; right: 0; height: 4px;
-  background: var(--c);
+  top: 0; left: 0; right: 0; height: 8px;
+  background: linear-gradient(to bottom, var(--c) 0 6px, color-mix(in srgb, var(--c) 35%, transparent) 6px 8px);
   transform: scaleY(1); transform-origin: top;
   transition: transform 0.3s var(--ease-out);
 }
-.champ-panel:hover::before { transform: scaleY(1.5); }
+@media (hover: hover) and (pointer: fine) {
+  .champ-panel:hover::before { transform: scaleY(1.35); }
+}
 
 /* Color glow at bottom on hover */
 .champ-panel::after {
@@ -152,39 +147,33 @@ body.light .champ-panel.motogp { background: linear-gradient(155deg, #ffffff 50%
   background: transparent;
   transition: background 0.4s; pointer-events: none;
 }
-body:not(.light) .champ-panel:hover::after {
-  background: linear-gradient(to top, color-mix(in srgb, var(--c) 14%, transparent) 0%, transparent 100%);
+@media (hover: hover) and (pointer: fine) {
+  body:not(.light) .champ-panel:hover::after {
+    background: linear-gradient(to top, color-mix(in srgb, var(--c) 18%, transparent) 0%, transparent 100%);
+  }
+  body.light .champ-panel:hover::after {
+    background: linear-gradient(to top, color-mix(in srgb, var(--c) 10%, transparent) 0%, transparent 100%);
+  }
 }
-body.light .champ-panel:hover::after {
-  background: linear-gradient(to top, color-mix(in srgb, var(--c) 8%, transparent) 0%, transparent 100%);
-}
-
-/* Big background number */
-.panel-bg-num {
-  position: absolute; right: 8px; bottom: -16px;
-  font-size: 110px; font-weight: 900; line-height: 1;
-  color: var(--c); opacity: 0.07;
-  letter-spacing: -4px; pointer-events: none;
-  user-select: none;
-  transition: opacity 0.4s, transform 0.4s;
-}
-.champ-panel:hover .panel-bg-num { opacity: 0.14; transform: scale(1.1) translateY(-4px); }
 
 /* ── Panel inner content ── */
 .panel-inner {
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  padding: 28px 16px; gap: 14px;
+  padding: 32px 20px; gap: 16px;
   width: 100%; min-width: 0; overflow: hidden;
 }
+.panel-info  { order: 1; }
+.panel-logo-wrap { order: 2; }
+.panel-cta   { order: 3; }
 
 /* Logo */
 .panel-logo-wrap {
   width: 100%; display: flex; align-items: center; justify-content: center;
-  height: 60px; flex-shrink: 0;
+  height: 50px; flex-shrink: 0;
 }
 .panel-logo-wrap .champ-logo-img {
-  max-width: 160px; width: 85%; height: 100%;
+  max-width: 140px; width: 75%; height: 100%;
   object-fit: contain; object-position: center;
   filter: drop-shadow(0 0 6px var(--logo-glow)) drop-shadow(0 0 18px var(--logo-glow-wide));
   transition: transform 400ms var(--ease-out), filter 400ms ease;
@@ -192,30 +181,30 @@ body.light .champ-panel:hover::after {
 .champ-panel.f1    { --logo-glow: rgba(225,6,0,0.5);    --logo-glow-wide: rgba(225,6,0,0.2); }
 .champ-panel.wec   { --logo-glow: rgba(0,103,255,0.5);  --logo-glow-wide: rgba(0,103,255,0.2); }
 .champ-panel.motogp { --logo-glow: rgba(255,105,0,0.5); --logo-glow-wide: rgba(255,105,0,0.2); }
-.champ-panel:hover .panel-logo-wrap .champ-logo-img {
-  filter: drop-shadow(0 0 10px var(--logo-glow)) drop-shadow(0 0 28px var(--logo-glow-wide));
-}
 /* MotoGP logo slightly larger to visually match F1 & WEC */
 .champ-panel.motogp .panel-logo-wrap .champ-logo-img {
-  max-width: 240px; width: 110%;
+  max-width: 200px; width: 95%;
 }
-.champ-panel:hover .panel-logo-wrap .champ-logo-img { transform: scale(1.1); }
+@media (hover: hover) and (pointer: fine) {
+  .champ-panel:hover .panel-logo-wrap .champ-logo-img {
+    filter: drop-shadow(0 0 10px var(--logo-glow)) drop-shadow(0 0 28px var(--logo-glow-wide));
+    transform: scale(1.08);
+  }
+}
 
 /* Text info */
 .panel-info { text-align: center; min-width: 0; }
 .panel-name {
-  font-size: 20px; font-weight: 800; color: var(--text);
+  font-size: 32px; font-weight: 900; color: var(--text);
+  letter-spacing: -0.02em; line-height: 1.05;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .panel-series {
   font-size: 10.5px; color: var(--text-muted);
   letter-spacing: 0.8px; text-transform: uppercase;
   line-height: 1.4; margin-top: 4px;
-  opacity: 0; transform: translateY(6px);
-  transition: opacity 0.3s 0.08s, transform 0.3s 0.08s;
-  max-width: 220px;
+  max-width: 220px; margin-left: auto; margin-right: auto;
 }
-.champ-panel:hover .panel-series { opacity: 1; transform: translateY(0); }
 
 /* CTA button */
 .panel-cta {
@@ -224,14 +213,14 @@ body.light .champ-panel:hover::after {
   border-radius: 50px; color: var(--c);
   font-size: 12px; font-weight: 700; letter-spacing: 1px;
   text-transform: uppercase; white-space: nowrap;
-  opacity: 0; transform: translateY(8px);
-  transition: opacity 0.3s 0.14s, transform 0.3s 0.14s,
-              background 0.2s, color 0.2s;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s var(--ease-out);
 }
-.champ-panel:hover .panel-cta { opacity: 1; transform: translateY(0); }
-.panel-arrow { transition: transform 0.25s; display: inline-block; }
-.champ-panel:hover .panel-cta:hover { background: var(--c); color: #fff; }
-.champ-panel:hover .panel-cta:hover .panel-arrow { transform: translateX(4px); }
+.panel-arrow { transition: transform 200ms var(--ease-out); display: inline-block; }
+@media (hover: hover) and (pointer: fine) {
+  .panel-cta:hover { background: var(--c); color: #fff; }
+  .panel-cta:hover .panel-arrow { transform: translateX(4px); }
+}
+.panel-cta:active { transform: scale(0.97); }
 
 /* ── Theme button (landing) ── */
 .landing-theme-btn {
@@ -252,7 +241,7 @@ body.light .champ-panel:hover::after {
   background: rgba(0,0,0,0.72); backdrop-filter: blur(8px);
 }
 body.light #year-picker { background: rgba(180,190,210,0.6); }
-#year-picker.open { display: flex; }
+#year-picker.open { display: flex; animation: overlayIn 180ms var(--ease-out) both; }
 
 .year-modal {
   background: var(--surface); border: 1px solid var(--border);
@@ -296,17 +285,18 @@ body.light #year-picker { background: rgba(180,190,210,0.6); }
     flex-direction: column; padding: 8px 16px 28px; gap: 10px;
   }
   .champ-panel { flex: none; min-height: 90px; }
-  .champ-panel:hover { flex: none; }
-  .panel-bg-num { font-size: 80px; }
   .panel-inner { flex-direction: row; padding: 18px 16px; gap: 12px; justify-content: flex-start; }
+  .panel-info, .panel-logo-wrap, .panel-cta { order: 0; }
   .panel-logo-wrap { width: 90px; height: 40px; flex-shrink: 0; }
   .panel-logo-wrap .champ-logo-img { max-width: 90px; object-position: left center; }
   .panel-info { text-align: left; }
-  .panel-series { opacity: 1; transform: none; }
-  .panel-cta { opacity: 1; transform: none; margin-left: auto; flex-shrink: 0; }
+  .panel-name { font-size: 22px; }
+  .panel-series { margin-left: 0; margin-right: 0; }
+  .panel-cta { margin-left: auto; flex-shrink: 0; }
 }
 @media (max-width: 480px) {
-  .landing-header { padding: 36px 16px 16px; }
+  .landing-header { padding: 16px 16px; }
+  .landing-subtitle { display: none; }
   .panel-cta { display: none; }
   .year-modal { min-width: auto; width: calc(100vw - 32px); padding: 28px 20px; }
 }
