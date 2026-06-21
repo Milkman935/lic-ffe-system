@@ -108,6 +108,7 @@ body.light .landing-title span { color: #008c78; }
 .champ-panel:nth-child(1) { animation-delay: 200ms; }
 .champ-panel:nth-child(2) { animation-delay: 290ms; }
 .champ-panel:nth-child(3) { animation-delay: 370ms; }
+.champ-panel:nth-child(4) { animation-delay: 440ms; }
 @keyframes panelIn { from { opacity: 0; transform: translateY(18px); } }
 @media (hover: hover) and (pointer: fine) {
   .champ-panel:hover {
@@ -124,6 +125,7 @@ body.light .landing-title span { color: #008c78; }
 .champ-panel:active { transform: translateY(-2px) scale(0.99); }
 
 /* Championship color vars */
+.champ-panel.events { --c: #00e6c8; }
 .champ-panel.f1    { --c: #e10600; }
 .champ-panel.wec   { --c: #0067ff; }
 .champ-panel.motogp { --c: #ff6900; }
@@ -178,6 +180,7 @@ body.light .landing-title span { color: #008c78; }
   filter: drop-shadow(0 0 6px var(--logo-glow)) drop-shadow(0 0 18px var(--logo-glow-wide));
   transition: transform 400ms var(--ease-out), filter 400ms ease;
 }
+.champ-panel.events { --logo-glow: rgba(0,230,200,0.5); --logo-glow-wide: rgba(0,230,200,0.2); }
 .champ-panel.f1    { --logo-glow: rgba(225,6,0,0.5);    --logo-glow-wide: rgba(225,6,0,0.2); }
 .champ-panel.wec   { --logo-glow: rgba(0,103,255,0.5);  --logo-glow-wide: rgba(0,103,255,0.2); }
 .champ-panel.motogp { --logo-glow: rgba(255,105,0,0.5); --logo-glow-wide: rgba(255,105,0,0.2); }
@@ -187,6 +190,19 @@ body.light .landing-title span { color: #008c78; }
 }
 @media (hover: hover) and (pointer: fine) {
   .champ-panel:hover .panel-logo-wrap .champ-logo-img {
+    filter: drop-shadow(0 0 10px var(--logo-glow)) drop-shadow(0 0 28px var(--logo-glow-wide));
+    transform: scale(1.08);
+  }
+}
+
+/* Events panel SVG icon */
+.champ-panel.events .events-panel-svg {
+  color: var(--c);
+  filter: drop-shadow(0 0 6px var(--logo-glow)) drop-shadow(0 0 18px var(--logo-glow-wide));
+  transition: transform 400ms var(--ease-out), filter 400ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .champ-panel.events:hover .events-panel-svg {
     filter: drop-shadow(0 0 10px var(--logo-glow)) drop-shadow(0 0 28px var(--logo-glow-wide));
     transform: scale(1.08);
   }
