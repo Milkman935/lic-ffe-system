@@ -26,6 +26,7 @@ function save() {
     localStorage.setItem(storageKey(S.champ, S.year), JSON.stringify(S.data));
     localStorage.setItem('lic_ffe_years', JSON.stringify(S.years));
     S._dirty = false;
+    updateSaveIndicator();
   } catch(e) {
     if (!save._warned) {
       save._warned = true;
@@ -34,10 +35,26 @@ function save() {
   }
 }
 
+// Quiet save-state pill in the topbar — updates state/color only, never
+// animates, since this can change on every keystroke.
+function updateSaveIndicator() {
+  const el = document.getElementById('save-indicator');
+  if (!el) return;
+  const label = el.querySelector('.save-indicator-label');
+  if (S._dirty) {
+    el.classList.remove('clean'); el.classList.add('dirty');
+    if (label) label.textContent = 'Unsaved';
+  } else {
+    el.classList.remove('dirty'); el.classList.add('clean');
+    if (label) label.textContent = 'Saved';
+  }
+}
+
 // Debounced save — call after every data mutation to guarantee persistence
 let _saveTimer = null;
 function debouncedSave() {
   S._dirty = true;
+  updateSaveIndicator();
   if (_saveTimer) clearTimeout(_saveTimer);
   _saveTimer = setTimeout(() => { save(); _saveTimer = null; }, 400);
 }

@@ -106,4 +106,40 @@ table.items-table{width:100%;border-collapse:collapse;font-size:13px}
 
 /* TEAM IMAGES — thumbnails are inline-styled in JS; layer transform-only motion on top */
 .team-images-section img{transition:transform 200ms var(--ease-out)}
+
+/* ── FIELD MODE — stacked cards for the delivery table on narrow screens ──
+   This is the screen someone actually uses standing at a location with a
+   phone, so it gets real tap targets instead of a shrunk desktop table. */
+@media (max-width:680px) {
+  .items-table-wrap{border:none;overflow:visible}
+  table.items-table{font-size:13px}
+  .items-table thead{display:none}
+  .items-table, .items-table tbody, .items-table tr, .items-table td{display:block;width:100%}
+  .items-table tr{
+    border:1px solid var(--border);border-radius:12px;background:var(--surface2);
+    padding:12px 14px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.12);
+  }
+  .items-table td{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:7px 0;border-bottom:1px solid var(--border);max-width:none!important;
+  }
+  .items-table tr:hover td{background:none}
+  .items-table td:last-child{border-bottom:none;padding-top:10px}
+  .items-table td[data-label]::before{
+    content:attr(data-label);font-size:10px;font-weight:700;text-transform:uppercase;
+    letter-spacing:0.8px;color:var(--text-muted);flex-shrink:0;
+  }
+  .items-table td[data-label=""]::before{display:none}
+  .items-table td[data-label=""]{justify-content:flex-end}
+  .items-table td[data-label="Item"]{font-size:14px}
+  .items-table td[data-label="Status"]{flex-direction:column;align-items:stretch;gap:4px}
+  .items-table td[data-label="Status"]::before{margin-bottom:2px}
+  .items-table .progress-mini{margin-top:2px;width:100%}
+  /* Bigger tap targets — this is used one-handed while carrying a box */
+  .qty-input{width:64px;min-height:40px;font-size:15px}
+  .del-row-btn{min-width:36px;min-height:36px}
+  .done-loc-btn{min-height:36px;padding:8px 14px;font-size:13px}
+  .loc-meta{gap:10px}
+  .loc-meta-input{min-height:38px;font-size:14px}
+}
 @media (hover: hover) and (pointer: fine) { .team-images-section img:hover{transform:scale(1.05)} }

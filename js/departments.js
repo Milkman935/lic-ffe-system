@@ -282,16 +282,16 @@ function renderLocDetail(deptName, locName, locInfo, did) {
     const sc = pct===100?'var(--success)':pct>0?'var(--warning)':'var(--text-muted)';
     const cat = item.category||categorize(item.name);
     html += `<tr data-item-id="${item.id}" data-qty="${qty}">
-      <td style="font-weight:600;max-width:160px">${esc(item.name)}</td>
-      <td style="color:var(--text-muted);font-size:12px;max-width:150px">${esc(item.description||'—')}</td>
-      <td><span class="cat-badge">${esc(cat)}</span></td>
-      <td><input class="qty-input qty-req" type="number" min="0" value="${qty}" oninput="updateQtyCtx('${did}','${item.id}',this.value,this)"></td>
-      <td><input class="qty-input qty-del" type="number" min="0" max="${qty}" value="${dval}" oninput="updateDelCtx('${did}','${item.id}',this.value,this)"></td>
-      <td class="status-cell" style="min-width:80px">
+      <td data-label="Item" style="font-weight:600;max-width:160px">${esc(item.name)}</td>
+      <td data-label="Description" style="color:var(--text-muted);font-size:12px;max-width:150px">${esc(item.description||'—')}</td>
+      <td data-label="Category"><span class="cat-badge">${esc(cat)}</span></td>
+      <td data-label="Requested"><input class="qty-input qty-req" type="number" min="0" value="${qty}" oninput="updateQtyCtx('${did}','${item.id}',this.value,this)"></td>
+      <td data-label="Delivered"><input class="qty-input qty-del" type="number" min="0" max="${qty}" value="${dval}" oninput="updateDelCtx('${did}','${item.id}',this.value,this)"></td>
+      <td data-label="Status" class="status-cell" style="min-width:80px">
         <div class="status-pct" style="color:${sc};font-size:12px;font-weight:600">${pct}%</div>
         <div class="progress-mini"><div class="progress-mini-fill" style="width:${pct}%;background:${sc}"></div></div>
       </td>
-      <td><button class="del-row-btn" onclick="removeItemCtx('${did}','${item.id}')">${icon('x',12)}</button></td>
+      <td data-label=""><button class="del-row-btn" onclick="removeItemCtx('${did}','${item.id}')">${icon('x',12)}</button></td>
     </tr>`;
   });
 

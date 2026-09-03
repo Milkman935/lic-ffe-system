@@ -2,6 +2,9 @@
 #app{display:none;height:100vh;flex-direction:column}
 .topbar{height:60px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0;position:sticky;top:0;z-index:50;box-shadow:0 4px 20px rgba(0,0,0,0.18)}
 body.light .topbar{box-shadow:0 2px 12px rgba(0,0,0,0.07)}
+/* Championship identity — a quiet accent line so F1/WEC/MotoGP feel distinct
+   past the small badge, without repainting the whole shell per champ. */
+.topbar::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;background:linear-gradient(90deg,transparent,var(--champ-color) 20%,var(--champ-color) 80%,transparent);opacity:0.55;transition:background 300ms ease}
 .topbar-back{display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--text-muted);font-size:13px;padding:6px 10px;border-radius:6px;transition:background 150ms var(--ease-out),color 150ms var(--ease-out),transform 150ms var(--ease-out);white-space:nowrap}
 @media (hover: hover) and (pointer: fine) { .topbar-back:hover{background:var(--surface2);color:var(--text)} }
 .topbar-back:active{transform:scale(0.97)}
@@ -9,6 +12,12 @@ body.light .topbar{box-shadow:0 2px 12px rgba(0,0,0,0.07)}
 .champ-badge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;background:color-mix(in srgb,var(--champ-color) 20%,transparent);color:var(--champ-color);border:1px solid color-mix(in srgb,var(--champ-color) 40%,transparent);white-space:nowrap}
 .year-badge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;background:var(--surface2);color:var(--text-muted);border:1px solid var(--border)}
 .topbar-actions{display:flex;gap:8px;align-items:center}
+/* SAVE INDICATOR — quiet, never animates the frequent case (typing). Only the
+   state label/color changes; no motion, since this updates on every keystroke. */
+.save-indicator{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--text-muted);white-space:nowrap}
+.save-indicator-dot{width:6px;height:6px;border-radius:50%;background:var(--text-dim);transition:background 200ms ease}
+.save-indicator.dirty .save-indicator-dot{background:var(--warning)}
+.save-indicator.clean .save-indicator-dot{background:var(--success)}
 .btn{padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:transform 150ms var(--ease-out),opacity 150ms ease,background 150ms ease,color 150ms ease;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .btn:active{transform:scale(0.97)}
 .btn-primary{background:var(--champ-color);color:#fff}

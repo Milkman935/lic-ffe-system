@@ -57,7 +57,25 @@ function escJs(s) {
     .replace(/</g,'&lt;')
     .replace(/>/g,'&gt;');
 }
+// Flags a required-but-empty input: brief shake + red border, then focuses it.
+// Pairs with the existing toast so the error is also visible on the field itself.
+function flagInvalid(el) {
+  if (!el) return;
+  el.classList.remove('shake');
+  void el.offsetWidth; // restart the animation if it's already mid-run
+  el.classList.add('shake', 'input-invalid');
+  el.focus();
+  setTimeout(() => el.classList.remove('shake'), 400);
+  setTimeout(() => el.classList.remove('input-invalid'), 1800);
+}
 function deptColor(idx) { return DEPT_COLORS[idx % DEPT_COLORS.length]; }
+// Reorders a fixed categorical palette so the active championship's color leads —
+// gives F1/WEC/MotoGP charts a distinct identity while keeping the rest of the
+// sequence fixed (never cycled) for every other series, per the palette's own order.
+function champLedPalette(base, champColor) {
+  const rest = base.filter(c => c.toLowerCase() !== (champColor||'').toLowerCase());
+  return [champColor, ...rest];
+}
 function categorize(n) {
   n = (n||'').toLowerCase();
   // Categories follow the Excel "WEC & TEAMS order.code matrix" sheet exactly

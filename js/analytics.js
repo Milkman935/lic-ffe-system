@@ -11,6 +11,53 @@ function toggleChartDetail(btn) {
   btn.innerHTML = open ? icon('chevron-u',12)+' Details' : icon('chevron-d',12)+' Details';
 }
 
+// ── DEPT × CATEGORY COVERAGE HEATMAP ──
+// Reuses the app's existing tri-color status scale (success/warning/danger)
+// for consistency with every other % indicator in the app, rather than a new
+// sequential ramp — this app already treats that triad as its status palette.
+function buildDeptCategoryCoverage(ds, its) {
+  const cells = {}; // "dept|cat" -> {need, stock}
+  const deptNeed = {};
+  const catNeed = {};
+  its.forEach(item => {
+    const cat = categorize(item.name || '');
+    Object.entries(item.dept_quantities || {}).forEach(([dept, dq]) => {
+      let need = 0;
+      Object.values(dq || {}).forEach(q => { need += parseInt(q, 10) || 0; });
+      if (need <= 0) return;
+      const key = dept + '|' + cat;
+      if (!cells[key]) cells[key] = { need: 0, stock: 0 };
+      cells[key].need += need;
+      cells[key].stock += Math.min(need, itemAvail(item));
+      deptNeed[dept] = (deptNeed[dept] || 0) + need;
+      catNeed[cat] = (catNeed[cat] || 0) + need;
+    });
+  });
+  // Keep it legible: top 8 departments by total need, only categories that
+  // actually appear for one of them, in the app's canonical category order.
+  const topDepts = Object.entries(deptNeed).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([d]) => d);
+  const cats = CATEGORY_ORDER.filter(c => catNeed[c] && topDepts.some(d => cells[d + '|' + c]));
+  return { depts: topDepts, cats, cells };
+}
+function renderCoverageHeatmap(ds, its) {
+  const { depts: hDepts, cats, cells } = buildDeptCategoryCoverage(ds, its);
+  if (!hDepts.length || !cats.length) return '';
+  const cellColor = pct => pct >= 80 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
+  let html = `<div class="heatmap-scroll"><table class="heatmap-table"><thead><tr><th></th>${cats.map(c => `<th>${esc(c.length>14?c.slice(0,14):c)}</th>`).join('')}</tr></thead><tbody>`;
+  hDepts.forEach(dept => {
+    html += `<tr><th class="heatmap-rowlabel">${esc(dept.length>22?dept.slice(0,22)+'…':dept)}</th>`;
+    cats.forEach(cat => {
+      const c = cells[dept + '|' + cat];
+      if (!c) { html += `<td class="heatmap-cell empty">—</td>`; return; }
+      const pct = c.need > 0 ? Math.floor(Math.min(c.stock, c.need) / c.need * 100) : 0;
+      html += `<td class="heatmap-cell" style="background:color-mix(in srgb,${cellColor(pct)} 22%,transparent);color:${cellColor(pct)}" title="${esc(dept)} · ${esc(cat)}: ${c.stock} of ${c.need} covered">${pct}%</td>`;
+    });
+    html += `</tr>`;
+  });
+  html += `</tbody></table></div>`;
+  return html;
+}
+
 function renderAnalytics(container) {
   const its = items();
   const ds = depts();
@@ -51,7 +98,7 @@ function renderAnalytics(container) {
   const deptTotals = ds.map(([n])=>({name:n,total:getDeptTotal(n)})).sort((a,b)=>b.total-a.total);
   const topItems   = [...its].sort((a,b)=>itemTotal(b)-itemTotal(a)).slice(0,8);
   const topMax     = topItems.length ? itemTotal(topItems[0]) : 1;
-  const palette    = ['#e10600','#0067ff','#ff6900','#00c853','#aa00ff','#ffab00','#00bcd4','#ff4081'];
+  const palette    = champLedPalette(['#e10600','#0067ff','#ff6900','#00c853','#aa00ff','#ffab00','#00bcd4','#ff4081'], color);
 
   const topListHtml = topItems.map((item,i)=>`
     <li>
@@ -189,6 +236,14 @@ function renderAnalytics(container) {
         <ul class="top-list" style="margin-top:8px">${topListHtml}</ul>
       </div>
 
+      ${(() => { const hm = renderCoverageHeatmap(ds, its); return hm ? `
+      <!-- Dept × Category Coverage Heatmap -->
+      <div class="chart-card wide">
+        <div class="chart-title" style="margin-bottom:3px">Coverage by Department &amp; Category</div>
+        <div class="chart-subtitle">Where stock is short, broken down by item category — top 8 departments by demand</div>
+        ${hm}
+      </div>` : ''; })()}
+
     </div>`;
 
   // ─ Gauge ─
@@ -252,7 +307,7 @@ function renderAnalytics(container) {
     const isDarkT = !document.body.classList.contains('light');
     const tickColorT = isDarkT ? '#7070a0' : '#6b7280';
     const gridColorT = isDarkT ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
-    const palT = ['#e10600','#0067ff','#ff6900','#00c853','#aa00ff','#ffab00','#00bcd4','#ff4081','#64dd17','#f06292','#29b6f6','#ff7043','#9ccc65','#ab47bc','#26c6da'];
+    const palT = champLedPalette(['#e10600','#0067ff','#ff6900','#00c853','#aa00ff','#ffab00','#00bcd4','#ff4081','#64dd17','#f06292','#29b6f6','#ff7043','#9ccc65','#ab47bc','#26c6da'], CHAMP_COLORS[S.champ]||'#e10600');
 
     // ── build per-team stats ──
     const tStats = teamList.map(([tn, td], idx) => {

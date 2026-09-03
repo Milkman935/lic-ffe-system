@@ -1,3 +1,46 @@
+// ── OVERVIEW STRIP — completion rings + a live preview of what needs attention.
+// Sits above the inventory stat cards so "where do we stand" is answered before
+// anyone has to read a table. Pure CSS rings (conic-gradient) — no chart lib.
+function renderOverviewStrip(allDepts, needProcurement) {
+  let dTotal=0, dDel=0;
+  allDepts.forEach(([dn,dd]) => { const {total,del}=getDeptCounts(dn,Object.keys(dd.locations||{})); dTotal+=total; dDel+=del; });
+  const dPct = dTotal>0 ? Math.floor(dDel/dTotal*100) : 0;
+
+  const ts = (typeof teams === 'function') ? teams() : [];
+  let tTotal=0, tDel=0;
+  ts.forEach(([tn,td]) => { const {total,del}=getTeamCounts(tn,Object.keys(td.locations||{})); tTotal+=total; tDel+=del; });
+  const tPct = tTotal>0 ? Math.floor(tDel/tTotal*100) : 0;
+
+  const ringColor = pct => pct===100?'var(--success)':pct>=50?'var(--warning)':'var(--danger)';
+  const ring = (label, pct, sub) => `
+    <div class="ov-ring-card">
+      <div class="ov-ring" style="--pct:${pct};--c:${ringColor(pct)}">
+        <div class="ov-ring-inner">${pct}%</div>
+      </div>
+      <div class="ov-ring-label">${esc(label)}</div>
+      <div class="ov-ring-sub">${esc(sub)}</div>
+    </div>`;
+
+  const topNeeds = [...needProcurement].sort((a,b)=>itemDeficit(b)-itemDeficit(a)).slice(0,4);
+  const needsHtml = topNeeds.length
+    ? topNeeds.map(item => `
+        <div class="ov-needs-row" onclick="showProcurementModal()">
+          <span class="ov-needs-name">${esc(item.name.length>26?item.name.slice(0,26)+'…':item.name)}</span>
+          <span class="ov-needs-deficit">−${itemDeficit(item)}</span>
+        </div>`).join('')
+    : `<div class="ov-needs-empty">${icon('check',14)} Nothing needs procurement</div>`;
+
+  return `
+    <div class="overview-strip">
+      ${ring('Departments', dPct, `${dDel} of ${dTotal} items delivered`)}
+      ${ring('Teams', tPct, `${tDel} of ${tTotal} items delivered`)}
+      <div class="ov-needs-card" ${needProcurement.length ? 'onclick="showProcurementModal()" style="cursor:pointer"' : ''}>
+        <div class="ov-needs-title">Needs Attention${needProcurement.length ? ` <span class="ov-needs-count">${needProcurement.length}</span>` : ''}</div>
+        ${needsHtml}
+      </div>
+    </div>`;
+}
+
 function renderMaster(container) {
   const its = items();
   const allDepts = depts();
@@ -12,7 +55,7 @@ function renderMaster(container) {
   const deptDemand = allDepts.map(([n]) => ({ name:n, total: getDeptTotal(n) })).sort((a,b)=>b.total-a.total);
   const topDept = deptDemand[0];
 
-  let html = `
+  let html = renderOverviewStrip(allDepts, needProcurement) + `
     <div class="inv-stats-row">
       <div class="inv-stat-card" style="--c:var(--champ-color)">
         <div class="stat-label">Total Items Requested</div>

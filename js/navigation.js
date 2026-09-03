@@ -73,6 +73,14 @@ function renderTab(tab) {
   else if (tab === 'teams') renderTeams(c);
   else if (tab === 'analytics') renderAnalytics(c);
   else if (tab === 'progress') renderProgress(c);
+  updateContextualButtons(tab);
+}
+// Only show the "+ Item / + Dept / + Team" action relevant to the tab you're
+// looking at, instead of all three at once regardless of context.
+function updateContextualButtons(tab) {
+  document.querySelectorAll('[data-add-tab]').forEach(btn => {
+    btn.style.display = (btn.dataset.addTab === tab) ? '' : 'none';
+  });
 }
 function destroyCharts() {
   Object.values(S.charts).forEach(ch => { try { ch.destroy(); } catch(e){} });

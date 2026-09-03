@@ -1,3 +1,20 @@
+/* OVERVIEW STRIP — "where do we stand" before the table. CSS-only rings. */
+.overview-strip{display:flex;gap:16px;margin-bottom:22px;flex-wrap:wrap;animation:cardIn 350ms var(--ease-out) both}
+.ov-ring-card{display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 22px;min-width:150px}
+.ov-ring{position:relative;width:72px;height:72px;border-radius:50%;background:conic-gradient(var(--c) calc(var(--pct)*3.6deg), var(--surface3) 0deg);display:flex;align-items:center;justify-content:center;transition:background 500ms var(--ease-in-out)}
+.ov-ring-inner{width:56px;height:56px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:var(--text)}
+.ov-ring-label{font-size:12px;font-weight:700;color:var(--text);margin-top:2px}
+.ov-ring-sub{font-size:10.5px;color:var(--text-muted);text-align:center}
+.ov-needs-card{flex:1;min-width:240px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;transition:border-color 200ms var(--ease-out)}
+@media (hover: hover) and (pointer: fine) { .ov-needs-card[onclick]:hover{border-color:var(--danger)} }
+.ov-needs-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.ov-needs-count{background:rgba(255,23,68,0.15);color:var(--danger);border-radius:10px;padding:1px 8px;font-size:11px}
+.ov-needs-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;cursor:pointer;border-bottom:1px solid var(--border)}
+.ov-needs-row:last-child{border-bottom:none}
+.ov-needs-name{font-size:12.5px;color:var(--text)}
+.ov-needs-deficit{font-size:12.5px;font-weight:700;color:var(--danger)}
+.ov-needs-empty{font-size:12.5px;color:var(--text-muted);display:flex;align-items:center;gap:6px;padding:6px 0}
+
 /* MASTER VIEW — quiet metric strip */
 .inv-stats-row{display:flex;flex-wrap:wrap;align-items:flex-end;gap:36px;margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--border)}
 .inv-stat-card{display:flex;flex-direction:column;gap:6px;animation:cardIn 350ms var(--ease-out) both}

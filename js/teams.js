@@ -534,16 +534,16 @@ function renderTeamLocDetail(teamName, locName, locInfo, tid) {
     const pofNote = item.team_quantities[teamName]['_pof_note'];
     const descHtml = esc(item.description||'—') + (pofNote ? `<div style="color:var(--warning);margin-top:2px">${esc(pofNote)}</div>` : '');
     html += `<tr data-item-id="${item.id}" data-qty="${qty}">
-      <td style="font-weight:600;max-width:160px">${esc(item.name)}</td>
-      <td style="color:var(--text-muted);font-size:12px;max-width:150px">${descHtml}</td>
-      <td><span class="cat-badge">${esc(cat)}</span></td>
-      <td><input class="qty-input qty-req" type="number" min="0" value="${qty}" oninput="updateTeamQtyCtx('${tid}','${item.id}',this.value,this)"></td>
-      <td><input class="qty-input qty-del" type="number" min="0" max="${qty}" value="${dval}" oninput="updateTeamDelCtx('${tid}','${item.id}',this.value,this)"></td>
-      <td class="status-cell" style="min-width:80px">
+      <td data-label="Item" style="font-weight:600;max-width:160px">${esc(item.name)}</td>
+      <td data-label="Description" style="color:var(--text-muted);font-size:12px;max-width:150px">${descHtml}</td>
+      <td data-label="Category"><span class="cat-badge">${esc(cat)}</span></td>
+      <td data-label="Requested"><input class="qty-input qty-req" type="number" min="0" value="${qty}" oninput="updateTeamQtyCtx('${tid}','${item.id}',this.value,this)"></td>
+      <td data-label="Delivered"><input class="qty-input qty-del" type="number" min="0" max="${qty}" value="${dval}" oninput="updateTeamDelCtx('${tid}','${item.id}',this.value,this)"></td>
+      <td data-label="Status" class="status-cell" style="min-width:80px">
         <div class="status-pct" style="color:${sc};font-size:12px;font-weight:600">${pct}%</div>
         <div class="progress-mini"><div class="progress-mini-fill" style="width:${pct}%;background:${sc}"></div></div>
       </td>
-      <td><button class="del-row-btn" onclick="removeTeamItemCtx('${tid}','${item.id}')">${icon('x',12)}</button></td>
+      <td data-label=""><button class="del-row-btn" onclick="removeTeamItemCtx('${tid}','${item.id}')">${icon('x',12)}</button></td>
     </tr>`;
   });
 
@@ -852,7 +852,7 @@ function showAddTeamModal() {
 
 function addTeam() {
   const name = document.getElementById('new-team-name')?.value.trim();
-  if (!name) return showToast('Enter a team name','error');
+  if (!name) { showToast('Enter a team name','error'); flagInvalid(document.getElementById('new-team-name')); return; }
   if (!cd().teams) cd().teams = {};
   if (cd().teams[name]) return showToast('Team already exists','error');
   const villa  = parseInt(document.getElementById('new-team-villa')?.value, 10)||0;
@@ -939,7 +939,7 @@ function showAddTeamLocModal(teamName) {
 
 function addTeamLocation(teamName) {
   const name = document.getElementById('new-tloc-name')?.value.trim();
-  if (!name) return showToast('Enter a location name','error');
+  if (!name) { showToast('Enter a location name','error'); flagInvalid(document.getElementById('new-tloc-name')); return; }
   const team = cd().teams[teamName];
   if (!team) return;
   if (team.locations[name]) return showToast('Location already exists','error');

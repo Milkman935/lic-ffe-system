@@ -14,7 +14,7 @@ function showAddLocModal(deptName) {
 }
 function addLocation(deptName) {
   const name = document.getElementById('ml-name')?.value?.trim();
-  if (!name) return showToast('Name required','error');
+  if (!name) { showToast('Name required','error'); flagInvalid(document.getElementById('ml-name')); return; }
   const dept = cd().departments[deptName];
   if (!dept) return;
   if (!dept.locations) dept.locations = {};
@@ -41,7 +41,7 @@ function showAddDeptModal() {
 }
 function addDept() {
   const name = document.getElementById('md-name')?.value?.trim();
-  if (!name) return showToast('Name required','error');
+  if (!name) { showToast('Name required','error'); flagInvalid(document.getElementById('md-name')); return; }
   if (cd().departments[name]) return showToast('Already exists','error');
   cd().departments[name] = { locations: {} };
   save();
@@ -72,7 +72,7 @@ function showAddItemModal() {
 }
 function addNewItem() {
   const name = document.getElementById('mi-name')?.value?.trim();
-  if (!name) return showToast('Name required','error');
+  if (!name) { showToast('Name required','error'); flagInvalid(document.getElementById('mi-name')); return; }
   const item = {
     id: `item_${Date.now()}_${Math.random().toString(36).slice(2,7)}`, name,
     category: document.getElementById('mi-cat')?.value||'Other',

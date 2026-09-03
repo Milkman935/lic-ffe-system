@@ -143,16 +143,17 @@
       <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
       Viewer
     </div>
+    <div id="save-indicator" class="save-indicator clean edit-only"><span class="save-indicator-dot"></span><span class="save-indicator-label">Saved</span></div>
     <div class="topbar-actions">
-      <button class="btn btn-ghost edit-only" onclick="showAddItemModal()">
+      <button class="btn btn-ghost edit-only" data-add-tab="master" onclick="showAddItemModal()">
         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
         Item
       </button>
-      <button class="btn btn-ghost edit-only" onclick="showAddDeptModal()">
+      <button class="btn btn-ghost edit-only" data-add-tab="matrix" onclick="showAddDeptModal()">
         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
         Dept
       </button>
-      <button class="btn btn-ghost edit-only" onclick="showAddTeamModal()">
+      <button class="btn btn-ghost edit-only" data-add-tab="teams" onclick="showAddTeamModal()">
         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
         Team
       </button>
