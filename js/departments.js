@@ -66,7 +66,7 @@ function renderMatrix(container) {
     const isOpen = S.openDept === did;
     html += `
       <div class="dept-block${isOpen?' open':''}" id="dept-${did}" data-dept="${esc(deptName)}">
-        <div class="dept-header" onclick="toggleDept('${did}','${esc(deptName)}')">
+        <div class="dept-header" onclick="toggleDept('${did}','${escJs(deptName)}')">
           <span class="dept-chevron">${icon('chevron-r',14)}</span>
           <span class="dept-color-dot" style="background:${color}"></span>
           <input class="dept-name-input" value="${esc(deptName)}" data-old="${esc(deptName)}" data-did="${did}" onclick="event.stopPropagation()" onblur="renameDept(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">
@@ -76,9 +76,9 @@ function renderMatrix(container) {
             <span class="dept-stat" style="color:${pct===100?'var(--success)':pct>50?'var(--warning)':'var(--text-muted)'}"><strong>${pct}%</strong> done</span>
           </div>
           <div class="dept-header-btns" onclick="event.stopPropagation()">
-            <button class="dept-export-btn" onclick="exportDept('${esc(deptName)}')">${icon('download',13)} Export</button>
-            <button class="dept-add-loc-btn" onclick="showAddLocModal('${esc(deptName)}')">+ Location</button>
-            <button class="dept-del-btn" onclick="deleteDept('${esc(deptName)}')">${icon('trash',13)} Delete</button>
+            <button class="dept-export-btn" onclick="exportDept('${escJs(deptName)}')">${icon('download',13)} Export</button>
+            <button class="dept-add-loc-btn" onclick="showAddLocModal('${escJs(deptName)}')">+ Location</button>
+            <button class="dept-del-btn" onclick="deleteDept('${escJs(deptName)}')">${icon('trash',13)} Delete</button>
           </div>
         </div>
         <div class="dept-body" id="dept-body-${did}">

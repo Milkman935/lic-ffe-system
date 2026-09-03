@@ -43,6 +43,20 @@ function slug(s) { return String(s).replace(/[^a-z0-9]/gi,'_').toLowerCase(); }
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
+// Safe for interpolating into a single-quoted JS string literal that itself sits
+// inside a double-quoted inline HTML attribute, e.g. onclick="fn('${escJs(name)}')".
+// esc() alone is NOT safe there: the browser HTML-decodes attribute values before
+// parsing them as JS, so esc()'s `&#39;` for a quote comes back as a literal `'`
+// and breaks out of the string (e.g. a dept/team name like "Driver's Lounge").
+function escJs(s) {
+  return String(s||'')
+    .replace(/\\/g,'\\\\')
+    .replace(/'/g,"\\'")
+    .replace(/&/g,'&amp;')
+    .replace(/"/g,'&quot;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;');
+}
 function deptColor(idx) { return DEPT_COLORS[idx % DEPT_COLORS.length]; }
 function categorize(n) {
   n = (n||'').toLowerCase();

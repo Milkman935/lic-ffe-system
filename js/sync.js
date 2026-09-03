@@ -116,6 +116,7 @@ function importItemsFromF1() {
         category: f1item.category || '',
         description: f1item.description || '',
         dept_quantities: {},
+        team_quantities: {},
         total_needed: 0,
         lic_inventory: f1item.lic_inventory || 0,
         moys_lic: f1item.moys_lic || 0,

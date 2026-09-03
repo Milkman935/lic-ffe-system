@@ -103,6 +103,7 @@ function migrateItemNames() {
       saved.items.forEach(item => { byId[item.id] = item; });
 
       // Rebuild items list: canonical order + names, but saved data for each
+      const canonicalIds = new Set(canonical.map(ci => ci.id));
       const newItems = canonical.map(ci => {
         const existing = byId[ci.id];
         const merged = existing
@@ -114,8 +115,11 @@ function migrateItemNames() {
         merged.category = categorize(merged.name);
         return merged;
       });
+      // Preserve any custom items (added via "+ Item", POF import, etc.) that
+      // aren't part of the canonical seed list — these must never be dropped.
+      const customItems = saved.items.filter(it => it && it.id && !canonicalIds.has(it.id));
 
-      saved.items = newItems;
+      saved.items = newItems.concat(customItems);
 
       // Ensure teams object exists in saved data
       if (!saved.teams) saved.teams = {};
@@ -131,4 +135,3 @@ migrateDeliveriesToBlob();
 migrateItemNames();
 loadYears();
 initTheme();
-</script>

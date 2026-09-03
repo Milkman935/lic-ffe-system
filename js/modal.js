@@ -9,7 +9,7 @@ function showAddLocModal(deptName) {
     <div class="form-group"><label class="form-label">Contact Person</label><input class="form-input" id="ml-contact" placeholder="Name"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="addLocation('${esc(deptName)}')">Add</button>
+      <button class="btn btn-primary" onclick="addLocation('${escJs(deptName)}')">Add</button>
     </div>`);
 }
 function addLocation(deptName) {
@@ -108,8 +108,6 @@ function setModal(html) {
   document.getElementById('modal-overlay').classList.remove('hidden');
 }
 function closeModal() { document.getElementById('modal-overlay').classList.add('hidden'); }
-function closeModalOverlay(e) { if (e.target === document.getElementById('modal-overlay')) closeModal(); }
-
 function closeModalOverlay(e) { if (e.target === document.getElementById('modal-overlay')) closeModal(); }
 
 // ── ANALYTICS ──

@@ -46,15 +46,15 @@ function getTeamItemTotal(teamName) {
 function renderTeamImages(teamName, teamData, tid) {
   const imgs = teamData.images || [];
   let h = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 16px;border-top:1px solid var(--border);background:var(--surface)">';
-  h += '<button class="btn btn-ghost edit-only" style="font-size:12px;padding:5px 10px;flex-shrink:0" onclick="uploadTeamImage(\''+tid+'\',\''+esc(teamName)+'\')">+ File</button>';
+  h += '<button class="btn btn-ghost edit-only" style="font-size:12px;padding:5px 10px;flex-shrink:0" onclick="uploadTeamImage(\''+tid+'\',\''+escJs(teamName)+'\')">+ File</button>';
   imgs.forEach((img, idx) => {
     h += '<div style="position:relative;display:inline-flex">';
     if (img.dataUrl) {
-      h += '<img src="'+img.dataUrl+'" style="height:60px;width:auto;max-width:100px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="viewTeamImage(\''+esc(teamName)+'\','+idx+')" title="'+esc(img.caption||'')+'">';
+      h += '<img src="'+img.dataUrl+'" style="height:60px;width:auto;max-width:100px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="viewTeamImage(\''+escJs(teamName)+'\','+idx+')" title="'+esc(img.caption||'')+'">';
     } else {
-      h += '<div onclick="viewTeamImage(\''+esc(teamName)+'\','+idx+')" style="height:60px;width:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:6px;border:1px solid var(--border);background:var(--surface3);cursor:pointer" title="'+esc(img.caption||'')+'">'+icon('file',22)+'<span style="font-size:9px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:72px">'+esc(img.caption||'file')+'</span></div>';
+      h += '<div onclick="viewTeamImage(\''+escJs(teamName)+'\','+idx+')" style="height:60px;width:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:6px;border:1px solid var(--border);background:var(--surface3);cursor:pointer" title="'+esc(img.caption||'')+'">'+icon('file',22)+'<span style="font-size:9px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:72px">'+esc(img.caption||'file')+'</span></div>';
     }
-    h += '<button class="edit-only" onclick="removeTeamImage(\''+tid+'\',\''+esc(teamName)+'\','+idx+')" style="position:absolute;top:-6px;right:-6px;background:#ff1744;color:#fff;border:none;border-radius:50%;width:16px;height:16px;font-size:10px;cursor:pointer;padding:0;line-height:1">x</button>';
+    h += '<button class="edit-only" onclick="removeTeamImage(\''+tid+'\',\''+escJs(teamName)+'\','+idx+')" style="position:absolute;top:-6px;right:-6px;background:#ff1744;color:#fff;border:none;border-radius:50%;width:16px;height:16px;font-size:10px;cursor:pointer;padding:0;line-height:1">x</button>';
     h += '</div>';
   });
   if (!imgs.length) h += '<span style="font-size:12px;color:var(--text-dim)">No files attached yet</span>';
@@ -175,10 +175,10 @@ function renderTeams(container) {
     const isOpen = S.openTeam === tid;
     html += `
       <div class="dept-block${isOpen?' open':''}" id="team-${tid}" data-team="${esc(teamName)}">
-        <div class="dept-header" onclick="toggleTeam('${tid}','${esc(teamName)}')">
+        <div class="dept-header" onclick="toggleTeam('${tid}','${escJs(teamName)}')">
           <span class="dept-chevron">${icon('chevron-r',14)}</span>
           <span class="dept-color-dot" style="background:${c}"></span>
-          <input id="team-name-input-${tid}" value="${esc(teamName)}" onclick="event.stopPropagation()" onblur="renameTeam('${tid}','${esc(teamName)}',this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}else if(event.key==='Escape'){this.value='${esc(teamName)}';this.blur()}" style="font-weight:700;font-size:14px;flex:1;background:transparent;border:none;border-bottom:1px dashed var(--border);color:var(--text);cursor:text;padding:0 0 1px;outline:none;min-width:0" class="team-name-edit edit-only">
+          <input id="team-name-input-${tid}" value="${esc(teamName)}" onclick="event.stopPropagation()" onblur="renameTeam('${tid}','${escJs(teamName)}',this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}else if(event.key==='Escape'){this.value='${escJs(teamName)}';this.blur()}" style="font-weight:700;font-size:14px;flex:1;background:transparent;border:none;border-bottom:1px dashed var(--border);color:var(--text);cursor:text;padding:0 0 1px;outline:none;min-width:0" class="team-name-edit edit-only">
           <span class="view-only-name" style="font-weight:700;font-size:14px;flex:1">${esc(teamName)}</span>
           <div class="dept-stats">
             <span class="dept-stat" style="color:var(--text-muted);font-size:11px">Villa <strong>${teamData.villa||'—'}</strong></span>
@@ -188,10 +188,10 @@ function renderTeams(container) {
             <span class="dept-stat" style="color:${pct===100?'var(--success)':pct>50?'var(--warning)':'var(--text-muted)'}"><strong>${pct}%</strong> done</span>
           </div>
           <div class="dept-header-btns" onclick="event.stopPropagation()">
-            <button class="dept-export-btn" onclick="exportTeam('${esc(teamName)}')">${icon('download',13)} Export</button>
-            <button class="dept-add-loc-btn" onclick="showAddTeamLocModal('${esc(teamName)}')">+ Location</button>
-            <button class="dept-add-loc-btn" style="background:var(--surface3)" onclick="showEditTeamModal('${esc(teamName)}')">${icon('pencil',13)} Edit</button>
-            <button class="dept-del-btn" onclick="deleteTeam('${esc(teamName)}')">${icon('trash',13)} Delete</button>
+            <button class="dept-export-btn" onclick="exportTeam('${escJs(teamName)}')">${icon('download',13)} Export</button>
+            <button class="dept-add-loc-btn" onclick="showAddTeamLocModal('${escJs(teamName)}')">+ Location</button>
+            <button class="dept-add-loc-btn" style="background:var(--surface3)" onclick="showEditTeamModal('${escJs(teamName)}')">${icon('pencil',13)} Edit</button>
+            <button class="dept-del-btn" onclick="deleteTeam('${escJs(teamName)}')">${icon('trash',13)} Delete</button>
           </div>
         </div>
         <div class="dept-body" id="team-body-${tid}">
@@ -529,9 +529,13 @@ function renderTeamLocDetail(teamName, locName, locInfo, tid) {
     const pct = qty > 0 ? Math.round(dval/qty*100) : 0;
     const sc = pct===100?'var(--success)':pct>0?'var(--warning)':'var(--text-muted)';
     const cat = item.category||categorize(item.name);
+    // POF heavy-machinery submissions attach a mast/date note on the team_quantities
+    // map itself (see pof-import.js) — surface it here instead of leaving it hidden.
+    const pofNote = item.team_quantities[teamName]['_pof_note'];
+    const descHtml = esc(item.description||'—') + (pofNote ? `<div style="color:var(--warning);margin-top:2px">${esc(pofNote)}</div>` : '');
     html += `<tr data-item-id="${item.id}" data-qty="${qty}">
       <td style="font-weight:600;max-width:160px">${esc(item.name)}</td>
-      <td style="color:var(--text-muted);font-size:12px;max-width:150px">${esc(item.description||'—')}</td>
+      <td style="color:var(--text-muted);font-size:12px;max-width:150px">${descHtml}</td>
       <td><span class="cat-badge">${esc(cat)}</span></td>
       <td><input class="qty-input qty-req" type="number" min="0" value="${qty}" oninput="updateTeamQtyCtx('${tid}','${item.id}',this.value,this)"></td>
       <td><input class="qty-input qty-del" type="number" min="0" max="${qty}" value="${dval}" oninput="updateTeamDelCtx('${tid}','${item.id}',this.value,this)"></td>
@@ -851,8 +855,8 @@ function addTeam() {
   if (!name) return showToast('Enter a team name','error');
   if (!cd().teams) cd().teams = {};
   if (cd().teams[name]) return showToast('Team already exists','error');
-  const villa  = parseInt(document.getElementById('new-team-villa', 10)?.value)||0;
-  const pitbox = parseInt(document.getElementById('new-team-pitbox', 10)?.value)||0;
+  const villa  = parseInt(document.getElementById('new-team-villa')?.value, 10)||0;
+  const pitbox = parseInt(document.getElementById('new-team-pitbox')?.value, 10)||0;
   const autoLoc = document.getElementById('new-team-autoloc')?.checked;
   const locations = {};
   if (autoLoc) {
@@ -885,7 +889,7 @@ function showEditTeamModal(teamName) {
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
         <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveTeamMeta('${esc(teamName)}')">Save</button>
+        <button class="btn btn-primary" onclick="saveTeamMeta('${escJs(teamName)}')">Save</button>
       </div>
     </div>
   `);
@@ -894,8 +898,8 @@ function showEditTeamModal(teamName) {
 function saveTeamMeta(teamName) {
   const team = cd().teams[teamName];
   if (!team) return;
-  team.villa  = parseInt(document.getElementById('edit-team-villa', 10)?.value)||0;
-  team.pitbox = parseInt(document.getElementById('edit-team-pitbox', 10)?.value)||0;
+  team.villa  = parseInt(document.getElementById('edit-team-villa')?.value, 10)||0;
+  team.pitbox = parseInt(document.getElementById('edit-team-pitbox')?.value, 10)||0;
   save();
   closeModal();
   renderTab('teams');
@@ -921,12 +925,12 @@ function showAddTeamLocModal(teamName) {
       <div>
         <div class="loc-meta-label" style="margin-bottom:4px">Location Name</div>
         <input class="loc-meta-input" id="new-tloc-name" style="width:100%" placeholder="e.g. Villa 3 - GF or Pitbox 7"
-          onkeydown="if(event.key==='Enter')addTeamLocation('${esc(teamName)}')">
+          onkeydown="if(event.key==='Enter')addTeamLocation('${escJs(teamName)}')">
       </div>
-      ${suggestions.length ? `<div style="font-size:12px;color:var(--text-muted)">Quick-add: ${suggestions.map(s=>`<button class="btn btn-ghost" style="font-size:11px;padding:3px 8px;margin:2px" onclick="document.getElementById('new-tloc-name').value='${esc(s)}'">${esc(s)}</button>`).join('')}</div>` : ''}
+      ${suggestions.length ? `<div style="font-size:12px;color:var(--text-muted)">Quick-add: ${suggestions.map(s=>`<button class="btn btn-ghost" style="font-size:11px;padding:3px 8px;margin:2px" onclick="document.getElementById('new-tloc-name').value='${escJs(s)}'">${esc(s)}</button>`).join('')}</div>` : ''}
       <div style="display:flex;gap:10px;justify-content:flex-end">
         <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="addTeamLocation('${esc(teamName)}')">Add</button>
+        <button class="btn btn-primary" onclick="addTeamLocation('${escJs(teamName)}')">Add</button>
       </div>
     </div>
   `);
